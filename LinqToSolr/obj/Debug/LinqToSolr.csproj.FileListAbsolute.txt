@@ -1,0 +1,8 @@
+C:\Projects\LinqToSolr\LinqToSolr\bin\Debug\LinqToSolr.dll
+C:\Projects\LinqToSolr\LinqToSolr\bin\Debug\LinqToSolr.pdb
+C:\Projects\LinqToSolr\LinqToSolr\bin\Debug\Newtonsoft.Json.dll
+C:\Projects\LinqToSolr\LinqToSolr\bin\Debug\RestSharp.dll
+C:\Projects\LinqToSolr\LinqToSolr\bin\Debug\Newtonsoft.Json.xml
+C:\Projects\LinqToSolr\LinqToSolr\bin\Debug\RestSharp.xml
+C:\Projects\LinqToSolr\LinqToSolr\obj\Debug\LinqToSolr.dll
+C:\Projects\LinqToSolr\LinqToSolr\obj\Debug\LinqToSolr.pdb
