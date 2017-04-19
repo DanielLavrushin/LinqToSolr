@@ -1,6 +1,0 @@
-C:\Projects\LinqToSolr\LinqToSolr.Tests\bin\Debug\LinqToSolr.Tests.dll
-C:\Projects\LinqToSolr\LinqToSolr.Tests\bin\Debug\LinqToSolr.Tests.pdb
-C:\Projects\LinqToSolr\LinqToSolr.Tests\bin\Debug\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll
-C:\Projects\LinqToSolr\LinqToSolr.Tests\bin\Debug\Microsoft.VisualStudio.QualityTools.UnitTestFramework.xml
-C:\Projects\LinqToSolr\LinqToSolr.Tests\obj\Debug\LinqToSolr.Tests.dll
-C:\Projects\LinqToSolr\LinqToSolr.Tests\obj\Debug\LinqToSolr.Tests.pdb
