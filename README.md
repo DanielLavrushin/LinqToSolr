@@ -43,10 +43,28 @@ var solrService = new LinqToSolrService(solrConfig);
 ```
 
 ### Linq Query examples
-Where
+#### Where
 ---
 ```c#
 
 solrService.AsQueriable<MyProduct>().Where(x=>x.Group == "MyGroup1").ToList();
+
+```
+
+```c#
+
+solrService.AsQueriable<MyProduct>().Where(x=>x.Group.Contains("MyGroup")).ToList();
+
+```
+
+```c#
+
+solrService.AsQueriable<MyProduct>().Where(x=>x.Group.StartsWith("MyGroup")).ToList();
+
+```
+
+```c#
+
+solrService.AsQueriable<MyProduct>().Where(x=>x.Group.EndsWith("oup1")).ToList();
 
 ```
