@@ -1,6 +1,6 @@
 # LinqToSolr
 This is a lightwave C# library which provides Linq support for Solr.
-LinqToSolr implements IQueriable<> interface, which allows you to call Solr API directly VIA linq expressions.
+LinqToSolr implements IQueriable<> interface, which allows you to call Solr API with linq expressions directly.
 
 ## Supported Methods
 * Where
@@ -12,3 +12,10 @@ LinqToSolr implements IQueriable<> interface, which allows you to call Solr API 
 * Take
 * Skip
 
+## How to use
+First, create a model Class which will represent your Solr Document
+
+> public class MyProduct{
+>   public int Id{get;set;}
+>   public string Name{get;set}
+> }
