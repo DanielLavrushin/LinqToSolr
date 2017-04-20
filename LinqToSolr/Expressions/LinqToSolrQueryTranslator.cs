@@ -54,6 +54,19 @@ namespace LinqToSolr.Expressions
             return dic;
 
         }
+        internal string GetFieldName(MemberInfo member)
+        {
+
+            var dataMemberAttribute = member.GetCustomAttribute<JsonPropertyAttribute>();
+
+            var fieldName = !string.IsNullOrEmpty(dataMemberAttribute?.PropertyName)
+                   ? dataMemberAttribute.PropertyName
+                   : member.Name;
+            return fieldName;
+
+        }
+
+
 
         private Type GetElementType(Type type)
         {
@@ -70,7 +83,7 @@ namespace LinqToSolr.Expressions
             _isRedudant = true;
             sb = new StringBuilder();
             Visit(expression);
-            return sb.ToString().Replace(_elementType.Name, "");
+            return sb.ToString();
         }
 
 
@@ -95,7 +108,7 @@ namespace LinqToSolr.Expressions
                 sb.AppendFormat("&fq={0}", fq);
 
                 var arr = StripQuotes(m.Arguments[0]);
-                Visit(arr);
+                //    Visit(arr);
                 return m;
             }
             if (m.Method.DeclaringType == typeof(Queryable) && (m.Method.Name == "Take"))
@@ -140,7 +153,7 @@ namespace LinqToSolr.Expressions
             if (m.Method.DeclaringType == typeof(Queryable) && (m.Method.Name == "Select"))
             {
                 _service.CurrentQuery.Select = new SolrSelect(StripQuotes(m.Arguments[1]));
-                //    Visit(m.Arguments[0]);
+                Visit(m.Arguments[0]);
 
                 return m;
             }
@@ -370,7 +383,7 @@ namespace LinqToSolr.Expressions
             if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
             {
 
-                var fieldName = solrFields[m.Member.Name];
+                var fieldName = GetFieldName(m.Member);
                 sb.Append(fieldName);
                 return m;
             }
