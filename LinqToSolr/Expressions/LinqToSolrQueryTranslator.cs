@@ -17,7 +17,6 @@ namespace LinqToSolr.Expressions
         private StringBuilder sb;
         private bool _inRangeQuery;
         private ILinqToSolrService _service;
-        private readonly IDictionary<string, string> solrFields;
         private bool _isRedudant;
         private ICollection<string> _sortings;
         private Type _elementType;
@@ -25,35 +24,16 @@ namespace LinqToSolr.Expressions
         {
             _service = query;
             _elementType = GetElementType(_service.ElementType);
-            solrFields = GetFields();
             _sortings = new List<string>();
         }
         internal LinqToSolrQueryTranslator(ILinqToSolrService query, Type elementType)
         {
             _service = query;
             _elementType = GetElementType(elementType);
-            solrFields = GetFields();
             _sortings = new List<string>();
             _elementType = elementType;
         }
-        internal Dictionary<string, string> GetFields()
-        {
-            var dic = new Dictionary<string, string>();
-            var props = _elementType.GetProperties();
-            foreach (var p in props)
-            {
-                var dataMemberAttribute = p.GetCustomAttribute<JsonPropertyAttribute>();
-
-                var fieldName = !string.IsNullOrEmpty(dataMemberAttribute?.PropertyName)
-                       ? dataMemberAttribute.PropertyName
-                       : p.Name;
-                dic.Add(p.Name, fieldName);
-
-            }
-
-            return dic;
-
-        }
+     
         internal string GetFieldName(MemberInfo member)
         {
 
@@ -108,7 +88,7 @@ namespace LinqToSolr.Expressions
                 sb.AppendFormat("&fq={0}", fq);
 
                 var arr = StripQuotes(m.Arguments[0]);
-                //    Visit(arr);
+                Visit(arr);
                 return m;
             }
             if (m.Method.DeclaringType == typeof(Queryable) && (m.Method.Name == "Take"))
@@ -314,7 +294,7 @@ namespace LinqToSolr.Expressions
 
             if (q != null)
             {
-                sb.Append(_elementType.Name);
+               // sb.Append(_elementType.Name);
             }
             else
             {
