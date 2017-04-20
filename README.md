@@ -20,6 +20,7 @@ First, create a model Class which will represent your Solr Document
 public class MyProduct{
   public int Id{get;set;}
   public string Name{get;set}
+  public string Group{get;set}
 }
 
 ```
@@ -30,5 +31,22 @@ Then initialize a configuration class for a serivce
 
 var solrConfig = new LinqToSolrRequestConfiguration("http:/localhost:1433/") // url to solr instance
                 .MapIndexFor<MyProduct>("MyProductIndex"); // the way to map your model to Solr Index
+
+```
+
+Create base service and provide the configuration to it
+
+```c#
+
+var solrService = new LinqToSolrService(solrConfig);
+
+```
+
+### Linq Query examples
+Where
+---
+```c#
+
+solrService.AsQueriable<MyProduct>().Where(x=>x.Group == "MyGroup1").ToList();
 
 ```
