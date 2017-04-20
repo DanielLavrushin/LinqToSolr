@@ -21,6 +21,7 @@ public class MyProduct{
   public int Id{get;set;}
   public string Name{get;set}
   public string Group{get;set}
+  public bool IsDeleted{get;set}
 }
 
 ```
@@ -39,6 +40,25 @@ Create base service and provide the configuration to it
 ```c#
 
 var solrService = new LinqToSolrService(solrConfig);
+
+```
+
+You could create your custom inherited LinqToSolrService
+
+```c#
+
+public class MyProductService: LinqToSolrService{
+
+  private IQueryable<SolrProduct> IsNotDeleted()
+  {
+       return AsQueryable<SolrProduct>().Where(x=> !x.IsDeleted);
+  }
+
+  public ICollection<SolrProduct> GetProductsByIds(params int[] ids)
+  {
+      return IsNotDeleted().Where(x=> ids.Contains(x.Id)).ToList();
+  }
+}
 
 ```
 
@@ -72,5 +92,11 @@ solrService.AsQueriable<MyProduct>().Where(x=>x.Group.StartsWith("MyGroup")).ToL
 ```c#
 
 solrService.AsQueriable<MyProduct>().Where(x=>x.Group.EndsWith("oup1")).ToList();
+
+```
+
+```c#
+
+solrService.AsQueriable<MyProduct>().Where(x=> !x.IsDeleted && x.Name.Contains("productName")).ToList();
 
 ```
