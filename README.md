@@ -15,8 +15,11 @@ LinqToSolr implements IQueriable<> interface, which allows you to call Solr API 
 ## How to use
 First, create a model Class which will represent your Solr Document
 
-```C
+```c
 public class MyProduct{
   public int Id{get;set;}
   public string Name{get;set}
 }
+
+
+```
