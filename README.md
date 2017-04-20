@@ -49,12 +49,12 @@ You could create your custom inherited LinqToSolrService
 
 public class MyProductService: LinqToSolrService{
 
-  private IQueryable<SolrProduct> IsNotDeleted()
+  private IQueryable<MyProduct> IsNotDeleted()
   {
-       return AsQueryable<SolrProduct>().Where(x=> !x.IsDeleted);
+       return AsQueryable<MyProduct>().Where(x=> !x.IsDeleted);
   }
 
-  public ICollection<SolrProduct> GetProductsByIds(params int[] ids)
+  public ICollection<MyProduct> GetProductsByIds(params int[] ids)
   {
       return IsNotDeleted().Where(x=> ids.Contains(x.Id)).ToList();
   }
