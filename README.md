@@ -120,3 +120,13 @@ solrService.AsQueriable<MyProduct>().FirstOrDefault(x=>x.Id == 123);
 solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").OrderBy(x=>x.Id).ThenByDescending(x=>x.Name).ToList();
 
 ```
+
+#### Select
+---
+```c#
+solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").Select(x=x.Name).ToList();
+```
+
+```c#
+solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").Select(x=x new {x.Name, x.Group}).ToList();
+```
