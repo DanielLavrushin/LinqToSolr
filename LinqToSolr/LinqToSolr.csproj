@@ -48,12 +48,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Converters\SolrGroupingResponseConverter.cs" />
     <Compile Include="Data\ILinqToSolrResponse.cs" />
     <Compile Include="Data\LinqToSolrFacet.cs" />
     <Compile Include="Data\LinqToSolrFilter.cs" />
     <Compile Include="Data\LinqToSolrIndexMapping.cs" />
     <Compile Include="Data\LinqToSolrQuery.cs" />
     <Compile Include="Data\LinqToSolrRequestConfiguration.cs" />
+    <Compile Include="Data\LinqToSolrResponse.cs" />
     <Compile Include="Data\LinqToSolrResponseBody.cs" />
     <Compile Include="Data\LinqToSolrResponseError.cs" />
     <Compile Include="Data\LinqToSolrResponseFacets.cs" />

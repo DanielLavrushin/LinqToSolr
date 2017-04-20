@@ -8,7 +8,7 @@ using LinqToSolr.Services;
 
 namespace LinqToSolr.Query
 {
-    class LinqToSolrQueriable<TObject>: IOrderedQueryable<TObject>
+    public class LinqToSolrQueriable<TObject>: IOrderedQueryable<TObject>
     {
         public LinqToSolrQueriable(ILinqToSolrService service)
         {
