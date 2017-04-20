@@ -52,6 +52,12 @@ solrService.AsQueriable<MyProduct>().Where(x=>x.Group == "MyGroup1").ToList();
 ```
 
 ```c#
+var groupArray = new[] { "MyGroup1", "MyGroup2", "MyGroup3", "MyGroup4" };
+solrService.AsQueriable<MyProduct>().Where(x=> groupArray.Contains(x.Group)).ToList();
+
+```
+
+```c#
 
 solrService.AsQueriable<MyProduct>().Where(x=>x.Group.Contains("MyGroup")).ToList();
 
