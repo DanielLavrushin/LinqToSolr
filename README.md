@@ -11,6 +11,10 @@ LinqToSolr implements IQueriable<> interface, which allows you to call Solr API 
 * GroupByFacets
 * Take
 * Skip
+* OrderBy
+* ThenBy
+* OrderByDescending
+* ThenByDescending
 
 ## How to use
 First, create a model Class which will represent your Solr Document
@@ -98,5 +102,21 @@ solrService.AsQueriable<MyProduct>().Where(x=>x.Group.EndsWith("oup1")).ToList()
 ```c#
 
 solrService.AsQueriable<MyProduct>().Where(x=> !x.IsDeleted && x.Name.Contains("productName")).ToList();
+
+```
+
+#### FirstOrDefault
+---
+```c#
+
+solrService.AsQueriable<MyProduct>().FirstOrDefault(x=>x.Id == 123);
+
+```
+
+#### OrderBy & OrderByDescending
+---
+```c#
+
+solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").OrderBy(x=>x.Id).ThenByDescending(x=>x.Name).ToList();
 
 ```
