@@ -125,10 +125,42 @@ solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").OrderBy(x=
 
 #### Select
 ---
+Below find an example of a custom service you could create in your project
 ```c#
 solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").Select(x=x.Name).ToList();
 ```
 
 ```c#
 solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").Select(x=x new {x.Name, x.Group}).ToList();
+```
+
+
+### Custom Service - Example
+---
+```c#
+public class MySolrService : LinqToSolrService 
+{
+    public MySolrService(LinqToSolrRequestConfiguration config) : base (config)
+    {    }
+
+    public IQueryable<MyProduct> NotDeleted()
+    {
+            return AsQueryable<MyProduct>().Where(x=> !x.IsDeleted);
+    }
+
+    public ICollection<MyProduct> GetProducts(params int[] ids)
+    {
+            return NotDeleted().Where(x=> ids.Contains(x.Id)).OrderBy(x=>x.Name).ToList();
+    }
+
+    public MyProduct GetProduct(id)
+    {
+            return NotDeleted().FirstOrDefault(x=> x.Id == id);
+    }
+
+    public string[] GetGroups(id)
+    {
+            return NotDeleted().GroupBy(x=> x.Group).ToArray();
+    }
+}
 ```
