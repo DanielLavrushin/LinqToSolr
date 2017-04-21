@@ -137,6 +137,8 @@ solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").Select(x=x
 
 ### Custom Service - Example
 ---
+Below find an example of how to implement a custom service inherited from LinqToSolrService
+
 ```c#
 public class MySolrService : LinqToSolrService 
 {
