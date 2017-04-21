@@ -23,7 +23,7 @@ namespace LinqToSolr.Services
         protected IRestClient Client;
         public LinqToSolrQuery CurrentQuery { get; set; }
 
-        protected LinqToSolrService()
+        public LinqToSolrService()
         {
             Configuration = LinqToSolrRequestConfiguration._instance;
 
@@ -36,7 +36,7 @@ namespace LinqToSolr.Services
             Client = new RestClient(Configuration.EndPoint);
         }
 
-        protected LinqToSolrService(LinqToSolrRequestConfiguration configuration)
+        public LinqToSolrService(LinqToSolrRequestConfiguration configuration)
         {
             Configuration = configuration;
             if (Configuration.Take <= 0)
