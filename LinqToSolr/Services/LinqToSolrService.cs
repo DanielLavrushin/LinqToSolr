@@ -6,6 +6,7 @@ using System.Net;
 using System.Reflection;
 using LinqToSolr.Converters;
 using LinqToSolr.Data;
+using LinqToSolr.Expressions;
 using LinqToSolr.Query;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -22,6 +23,7 @@ namespace LinqToSolr.Services
         public string CurrentFilterUrl { get; set; }
         protected IRestClient Client;
         public LinqToSolrQuery CurrentQuery { get; set; }
+
 
         public LinqToSolrService()
         {
@@ -56,7 +58,7 @@ namespace LinqToSolr.Services
             return new LinqToSolrQueriable<T>(this);
         }
 
-        private RestRequest PrepareRequest(string index)
+        private RestRequest PrepareQueryRequest(string index)
         {
 
 
@@ -134,13 +136,123 @@ namespace LinqToSolr.Services
             return request;
         }
 
+        private RestRequest PrepareUpdateOrDeleteRequest<T>(T[] documentsToUpdate, object[] deleteDocIds, string deleteByQuery)
+        {
+
+            var index = Configuration.GetIndex(typeof(T));
+
+            if (string.IsNullOrEmpty(index))
+            {
+                throw new ArgumentNullException(nameof(index),
+                    string.Format(
+                        "The type '{0}' is not assigned for any Solr Index. Register this type in a service configuration (SolrRequestConfiguration.MapIndexFor)",
+                       typeof(T).Name));
+            }
+
+            string path = string.Format("/solr/{0}/update", index);
+            var request = new RestRequest(path, Method.POST);
+
+            var updateDocs = JsonConvert.SerializeObject(documentsToUpdate);
+            request.AddQueryParameter("wt", "json");
+            request.AddQueryParameter("commit", "true");
+            if (documentsToUpdate != null && documentsToUpdate.Any())
+            {
+                request.AddParameter("application/json", updateDocs, ParameterType.RequestBody);
+            }
+            else if (deleteDocIds != null && deleteDocIds.Any())
+            {
+                request.AddParameter("application/json", JsonConvert.SerializeObject(new { delete = deleteDocIds }), ParameterType.RequestBody);
+            }
+            else if (!string.IsNullOrEmpty(deleteByQuery))
+            {
+                request.AddParameter("application/json", JsonConvert.SerializeObject(new { delete = new { query = deleteByQuery } }), ParameterType.RequestBody);
+            }
 
 
+            request.RequestFormat = DataFormat.Json;
+
+            return request;
+        }
+
+        private void PerformUpdate<T>(T[] documentsToUpdate)
+        {
+            var request = PrepareUpdateOrDeleteRequest(documentsToUpdate, null, null);
+            var responce = Client.Execute(request);
+
+            if (responce.StatusCode == HttpStatusCode.OK || responce.StatusCode == HttpStatusCode.NoContent)
+            {
+                LastResponse = new LinqToSolrResponse { LastServiceUri = responce.ResponseUri };
+                return;
+            }
+
+            var result = JsonConvert.DeserializeObject<dynamic>(responce.Content);
+
+            throw new Exception("Oops! SOLR Says: " + result.error.msg.ToString());
+
+        }
+
+        private void PerformDelete<T>(string query)
+        {
+            var request = PrepareUpdateOrDeleteRequest<T>(null, null, query);
+            var responce = Client.Execute(request);
+
+            if (responce.StatusCode == HttpStatusCode.OK || responce.StatusCode == HttpStatusCode.NoContent)
+            {
+                LastResponse = new LinqToSolrResponse { LastServiceUri = responce.ResponseUri };
+                return;
+            }
+
+            var result = JsonConvert.DeserializeObject<dynamic>(responce.Content);
+
+            throw new Exception("Oops! SOLR Says: " + result.error.msg.ToString());
+
+        }
+
+        private void PerformDelete<T>(object[] documentIds)
+        {
+
+            var request = PrepareUpdateOrDeleteRequest<T>(null, documentIds, null);
+            var responce = Client.Execute(request);
+            if (responce.StatusCode == HttpStatusCode.OK || responce.StatusCode == HttpStatusCode.NoContent)
+            {
+                LastResponse = new LinqToSolrResponse { LastServiceUri = responce.ResponseUri };
+                return;
+            }
+
+            var result = JsonConvert.DeserializeObject<dynamic>(responce.Content);
+
+            throw new Exception("Oops! SOLR Says: " + result.error.msg.ToString());
+        }
+
+        public void AddOrUpdate<T>(params T[] document)
+        {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+
+            PerformUpdate(document);
+        }
+
+        public void Delete<T>(params object[] documentId)
+        {
+            if (documentId == null)
+                throw new ArgumentNullException(nameof(documentId));
+
+            PerformDelete<T>(documentId);
+        }
+
+        public void Delete<T>(Expression<Func<T, bool>> query)
+        {
+            if (query == null)
+                throw new ArgumentNullException(nameof(query));
+
+            var translator = new LinqToSolrQueryTranslator(this, typeof(T));
+            var queryToStr = translator.Translate(query);
+            PerformDelete<T>(queryToStr);
+        }
 
         public ICollection<T> Query<T>(LinqToSolrQuery query = null)
         {
             return Query(typeof(T), query) as ICollection<T>;
-
         }
 
         public object Query(Type elementType, LinqToSolrQuery query = null)
@@ -164,7 +276,7 @@ namespace LinqToSolr.Services
                 Client.Authenticator = new HttpBasicAuthenticator(Configuration.SolrLogin, Configuration.SolrPassword);
             }
 
-            var response = Client.Execute(PrepareRequest(index));
+            var response = Client.Execute(PrepareQueryRequest(index));
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -191,7 +303,7 @@ namespace LinqToSolr.Services
                 if (LastResponse.Body != null)
                 {
 
-                    LastResponse.FoundDocuments = LastResponse.Body?.Count ?? 0;
+                    LastResponse.FoundDocuments = (int)LastResponse.Body?.Count;
 
                     var listMethod =
                         typeof(List<>).MakeGenericType(CurrentQuery.Select != null && !CurrentQuery.Select.IsSingleField
