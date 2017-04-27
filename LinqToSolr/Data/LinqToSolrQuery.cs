@@ -48,7 +48,17 @@ namespace LinqToSolr.Data
         {
             foreach (var p in baseType.GetProperties())
             {
+#if NET40
+                var attr =
+                    Attribute.GetCustomAttribute(p, typeof(JsonPropertyAttribute), true) as
+                        JsonPropertyAttribute;
+
+#endif
+
+#if NET45 || NET461
+
                 var attr = p.GetCustomAttribute<JsonPropertyAttribute>();
+#endif
                 if (attr != null)
                 {
                     //    TypeDescriptor.AddAttributes(Type, attr);
@@ -99,7 +109,16 @@ namespace LinqToSolr.Data
             internal static string GetName(MemberInfo member)
             {
                 var prop = member;
+
+#if NET40
+                var dataMemberAttribute =
+                    Attribute.GetCustomAttribute(prop, typeof(JsonPropertyAttribute), true) as
+                        JsonPropertyAttribute;
+
+#else
+
                 var dataMemberAttribute = prop.GetCustomAttribute<JsonPropertyAttribute>();
+#endif
 
                 return $"{prop.Name}:{(!string.IsNullOrEmpty(dataMemberAttribute?.PropertyName) ? dataMemberAttribute.PropertyName : prop.Name)}";
             }

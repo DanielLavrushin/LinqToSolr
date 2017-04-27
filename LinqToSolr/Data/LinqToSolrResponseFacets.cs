@@ -57,7 +57,8 @@ namespace LinqToSolr.Data
                 if (Fields.ContainsKey(p.Name))
                 {
                     var values = Fields[p.Name];
-                    p.SetValue(obj, values);
+
+                    p.SetValue(obj, values, null);
                 }
             }
 

@@ -16,11 +16,21 @@ namespace LinqToSolr.Data
         {
             var o = new LinqToSolrFilter();
             var prop = typeof(T).GetProperty(field);
-            var dataMemberAttribute = prop.GetCustomAttribute<JsonPropertyAttribute>();
+#if NET40
+            var dataMemberAttribute =
+                Attribute.GetCustomAttribute(prop, typeof(JsonPropertyAttribute), true) as
+                    JsonPropertyAttribute;
+
+#endif
+
+#if NET45 || NET461
+
+                var dataMemberAttribute = prop.GetCustomAttribute<JsonPropertyAttribute>();
+#endif
 
             o.Name = !string.IsNullOrEmpty(dataMemberAttribute?.PropertyName)
-                   ? dataMemberAttribute.PropertyName
-                   : prop.Name;
+                ? dataMemberAttribute.PropertyName
+                : prop.Name;
 
             o.Values = values.ToArray();
 
@@ -31,8 +41,16 @@ namespace LinqToSolr.Data
         {
             var o = new LinqToSolrFilter();
             var prop = objectType.GetProperty(field);
-            var dataMemberAttribute = prop.GetCustomAttribute<JsonPropertyAttribute>();
+#if NET40
+            var dataMemberAttribute =
+                Attribute.GetCustomAttribute(prop, typeof(JsonPropertyAttribute), true) as
+                    JsonPropertyAttribute;
 
+#else
+
+
+                var dataMemberAttribute = prop.GetCustomAttribute<JsonPropertyAttribute>();
+#endif
             o.Name = !string.IsNullOrEmpty(dataMemberAttribute?.PropertyName)
                    ? dataMemberAttribute.PropertyName
                    : prop.Name;
@@ -49,8 +67,16 @@ namespace LinqToSolr.Data
             var fb = fieldExp.Body as MemberExpression;
             if (fb != null)
             {
-                var dataMemberAttribute = fb.Member.GetCustomAttribute<JsonPropertyAttribute>();
+#if NET40
+                var dataMemberAttribute =
+                    Attribute.GetCustomAttribute(fb.Member, typeof(JsonPropertyAttribute), true) as
+                        JsonPropertyAttribute;
 
+#else
+
+
+                var dataMemberAttribute = fb.Member.GetCustomAttribute<JsonPropertyAttribute>();
+#endif
                 o.Name = !string.IsNullOrEmpty(dataMemberAttribute?.PropertyName)
                     ? dataMemberAttribute.PropertyName
                     : fb.Member.Name;

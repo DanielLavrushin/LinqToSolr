@@ -1,6 +1,9 @@
-﻿using System.Linq.Expressions;
+﻿using System;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using Newtonsoft.Json;
+using RestSharp.Extensions;
 
 namespace LinqToSolr.Data
 {
@@ -9,6 +12,7 @@ namespace LinqToSolr.Data
         public string SolrName { get; set; }
         public string Name { get; set; }
         public LambdaExpression Property { get; set; }
+
         public static LinqToSolrFacet Create(LambdaExpression fieldExp)
         {
             var o = new LinqToSolrFacet { Property = fieldExp };
@@ -16,7 +20,14 @@ namespace LinqToSolr.Data
             var fb = fieldExp.Body as MemberExpression;
             if (fb != null)
             {
+#if NET40
+                var dataMemberAttribute =
+                    Attribute.GetCustomAttribute(fb.Member, typeof(JsonPropertyAttribute), true) as
+                        JsonPropertyAttribute;
+#else
+
                 var dataMemberAttribute = fb.Member.GetCustomAttribute<JsonPropertyAttribute>();
+#endif
 
                 o.SolrName = !string.IsNullOrEmpty(dataMemberAttribute?.PropertyName)
                     ? dataMemberAttribute.PropertyName

@@ -37,7 +37,16 @@ namespace LinqToSolr.Expressions
         internal string GetFieldName(MemberInfo member)
         {
 
+
+#if NET40
+            var dataMemberAttribute =
+                Attribute.GetCustomAttribute(member, typeof(JsonPropertyAttribute), true) as
+                    JsonPropertyAttribute;
+
+#else
+
             var dataMemberAttribute = member.GetCustomAttribute<JsonPropertyAttribute>();
+#endif
 
             var fieldName = !string.IsNullOrEmpty(dataMemberAttribute?.PropertyName)
                    ? dataMemberAttribute.PropertyName
