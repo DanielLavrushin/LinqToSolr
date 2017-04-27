@@ -33,7 +33,7 @@ namespace LinqToSolr.Expressions
             _sortings = new List<string>();
             _elementType = elementType;
         }
-     
+
         internal string GetFieldName(MemberInfo member)
         {
 
@@ -153,11 +153,21 @@ namespace LinqToSolr.Expressions
                 else
                 {
                     var arr = (ConstantExpression)StripQuotes(m.Arguments[0]);
-                    var lambda = (MemberExpression)StripQuotes(m.Arguments[1]);
-                    Visit(lambda);
-                    Visit(arr);
-                    var solrQueryTranslator = new LinqToSolrQueryTranslator(_service);
-                    var fieldName = solrQueryTranslator.Translate(arr);
+                    Expression lambda;
+
+                    if (m.Arguments.Count == 2)
+                    {
+                        lambda = StripQuotes(m.Arguments[1]);
+                        Visit(lambda);
+                        Visit(arr);
+
+                    }
+                    else
+                    {
+                        var newExpr = Expression.Equal(m.Object, m.Arguments[0]);
+                        Visit(newExpr);
+                    }
+
 
                     return m;
                 }
@@ -294,7 +304,7 @@ namespace LinqToSolr.Expressions
 
             if (q != null)
             {
-               // sb.Append(_elementType.Name);
+                // sb.Append(_elementType.Name);
             }
             else
             {
