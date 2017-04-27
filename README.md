@@ -166,3 +166,53 @@ public class MySolrService : LinqToSolrService
     }
 }
 ```
+
+## Solr Documents Interaction
+It is also possible to Add, Update or Delete documents
+
+### Methods
+Add and Update methods are combined to one C# Method. If the document with the solr unique key already exists in a core, Solr will just update it or create a new one if the document is new.
+
+LinqToSolrService Service contains 2 methods to add or delete documents:
+* AddOrUpdate<T>(params T[] documents) - Add or update documents.
+* Delete<T>(params object[] documentIds) - delete documents by provided collection of ids
+* Delete<T>(Func<T, bool> query) - delete documents by query (the overload method for Delete)
+
+### How to add or update
+Here is an example to change the document data
+```c#
+ var products = new [] {
+    new MyProduct{Id = "Product1", Name= "Product One"},
+    new MyProduct{Id = "Product2", Name= "Product Two"},
+    new MyProduct{Id = "Product3", Name= "Product Three"} 
+ };
+ 
+ solrService.AddOrUpdate(products); // done, solr just added/updated 3 documents
+```
+
+Example: change product group
+```c#
+ var products = solrService.AsQueryable<MyProduct>().Where(x=> x.Group == "Group1").ToList();
+ foreach(var p in products)
+ {
+    p.Group = "Group2";
+ }
+ solrService.AddOrUpdate(products);
+```
+### How to Delete
+To delete specific products just provide an array of ids (or one document id) to a Delete method
+```c#
+  solrService.Delete<MyProduct>("Product123"); // delete one product with id Product123
+ ```
+ 
+ Or you could provide an array of ids to delete
+ ```c#
+  var productIds = solrService.AsQueryable<MyProduct>().Where(x=> x.Group == "Group1").Select(x=>x.Id).ToArray(); // select all ids by group
+  
+  solrService.Delete<MyProduct>(productIds); // delete documents by array of ids
+```
+
+ Or simply use query
+ ```c#
+  solrService.Delete<MyProduct>(x=> x.Group.Contains("Group to Delete"));
+```
