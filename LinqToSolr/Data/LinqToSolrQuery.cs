@@ -4,6 +4,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Newtonsoft.Json;
+#if NET35
+using LinqToSolr.Expressions;
+#endif
 
 namespace LinqToSolr.Data
 {
@@ -46,16 +49,17 @@ namespace LinqToSolr.Data
         }
         public void CreateProxyType(Type baseType)
         {
+#if PORTABLE || NETCORE
+            foreach (var p in baseType.GetRuntimeProperties())
+#else
             foreach (var p in baseType.GetProperties())
+#endif
             {
-#if NET40
+#if NET40 || NET35 || PORTABLE40
                 var attr =
                     Attribute.GetCustomAttribute(p, typeof(JsonPropertyAttribute), true) as
                         JsonPropertyAttribute;
-
-#endif
-
-#if NET45 || NET461
+#else
 
                 var attr = p.GetCustomAttribute<JsonPropertyAttribute>();
 #endif
@@ -81,28 +85,47 @@ namespace LinqToSolr.Data
             return str;
         }
 
-        internal class GetAllMembersVisitor: ExpressionVisitor
+#if NET35
+        internal class GetAllMembersVisitor: ExpressionVisitorNet35
+#else
+        internal class GetAllMembersVisitor: System.Linq.Expressions.ExpressionVisitor
+#endif
         {
+            
             internal ICollection<string> Members;
             internal GetAllMembersVisitor()
             {
                 Members = new List<string>();
             }
 
-
+#if NET35
+            protected override Expression VisitMemberAccess(MemberExpression node)
+#else
             protected override Expression VisitMember(MemberExpression node)
+#endif
             {
                 Members.Add(GetName(node.Member));
+#if NET35
+                return  node;
+#else
                 return base.VisitMember(node);
+#endif
             }
 
+#if NET35
             protected override Expression VisitBinary(BinaryExpression node)
+#else
+            protected override Expression VisitBinary(BinaryExpression node)
+#endif
             {
 
                 Visit(node.Left);
                 Visit(node.Right);
-
+#if NET35
+                return  node;
+#else
                 return base.VisitBinary(node);
+#endif
             }
 
 
@@ -110,7 +133,7 @@ namespace LinqToSolr.Data
             {
                 var prop = member;
 
-#if NET40
+#if NET40 || NET35 || PORTABLE40
                 var dataMemberAttribute =
                     Attribute.GetCustomAttribute(prop, typeof(JsonPropertyAttribute), true) as
                         JsonPropertyAttribute;
@@ -128,7 +151,7 @@ namespace LinqToSolr.Data
                 var gm = new GetAllMembersVisitor();
                 gm.Visit(expression);
 
-                return string.Join(",", gm.Members);
+                return string.Join(",", gm.Members.ToArray());
             }
 
         }

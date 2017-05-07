@@ -10,18 +10,20 @@ using LinqToSolr.Expressions;
 using LinqToSolr.Query;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RestSharp;
-using RestSharp.Authenticators;
 
 namespace LinqToSolr.Services
 {
+    internal class SolrErrorResponse
+    {
+
+    }
     public class LinqToSolrService: ILinqToSolrService
     {
         public LinqToSolrRequestConfiguration Configuration { get; set; }
         public ILinqToSolrResponse LastResponse { get; set; }
         public Type ElementType { get; set; }
         public string CurrentFilterUrl { get; set; }
-        protected IRestClient Client;
+        protected SolrWebClient Client;
         public LinqToSolrQuery CurrentQuery { get; set; }
 
 
@@ -35,7 +37,7 @@ namespace LinqToSolr.Services
             }
             if (Configuration == null || string.IsNullOrEmpty(Configuration.EndPoint))
                 throw new Exception("Solr Endpoint was not provided. Specify Solr server in SolrRequestConfiguration.");
-            Client = new RestClient(Configuration.EndPoint);
+            Client = new SolrWebClient(Configuration.EndPoint);
         }
 
         public LinqToSolrService(LinqToSolrRequestConfiguration configuration)
@@ -47,7 +49,7 @@ namespace LinqToSolr.Services
             }
             if (string.IsNullOrEmpty(Configuration.EndPoint))
                 throw new Exception("Solr Endpoint was not provided. Specify Solr server in SolrRequestConfiguration.");
-            Client = new RestClient(Configuration.EndPoint);
+            Client = new SolrWebClient(Configuration.EndPoint);
 
         }
 
@@ -58,29 +60,29 @@ namespace LinqToSolr.Services
             return new LinqToSolrQueriable<T>(this);
         }
 
-        private RestRequest PrepareQueryRequest(string index)
+        private SolrWebRequest PrepareQueryRequest(string index)
         {
 
 
             string path = string.Format("/solr/{0}/select", index);
-            var request = new RestRequest(path, Method.GET);
+            var request = new SolrWebRequest(path);
 
 
-            request.AddQueryParameter("q", "*");
-            request.AddQueryParameter("wt", "json");
-            request.AddQueryParameter("indent", "true");
-            request.AddQueryParameter("rows", Configuration.Take.ToString());
-            request.AddQueryParameter("start", Configuration.Start.ToString());
+            request.AddParameter("q", "*");
+            request.AddParameter("wt", "json");
+            request.AddParameter("indent", "true");
+            request.AddParameter("rows", Configuration.Take.ToString());
+            request.AddParameter("start", Configuration.Start.ToString());
 
 
             if (CurrentQuery.IsGroupEnabled)
             {
-                request.AddQueryParameter("group", "true");
-                request.AddQueryParameter("group.limit", Configuration.Take.ToString());
-                request.AddQueryParameter("group.offset", Configuration.Start.ToString());
+                request.AddParameter("group", "true");
+                request.AddParameter("group.limit", Configuration.Take.ToString());
+                request.AddParameter("group.offset", Configuration.Start.ToString());
                 foreach (var groupField in CurrentQuery.GroupFields)
                 {
-                    request.AddQueryParameter("group.field", groupField);
+                    request.AddParameter("group.field", groupField);
                 }
 
             }
@@ -90,8 +92,8 @@ namespace LinqToSolr.Services
             {
                 foreach (var filter in CurrentQuery.Filters)
                 {
-                    request.AddQueryParameter("fq", string.Format("{0}: ({1})", filter.Name,
-                        string.Join(" OR ", filter.Values.Select(x => string.Format("\"{0}\"", x))
+                    request.AddParameter("fq", string.Format("{0}: ({1})", filter.Name,
+                        string.Join(" OR ", filter.Values.Select(x => string.Format("\"{0}\"", x)).ToArray()
                         )));
                 }
             }
@@ -103,32 +105,32 @@ namespace LinqToSolr.Services
                 {
                     if (!string.IsNullOrEmpty(fstring))
                     {
-                        request.AddQueryParameter("fq", fstring);
+                        request.AddParameter("fq", fstring);
                     }
                 }
             }
 
             if (CurrentQuery.Sortings.Any())
             {
-                request.AddQueryParameter("sort", string.Join(", ", CurrentQuery.Sortings.Select(x =>
-                        string.Format("{0} {1}", x.Name, x.Order == SolrSortTypes.Desc ? "DESC" : "ASC"))));
+                request.AddParameter("sort", string.Join(", ", CurrentQuery.Sortings.Select(x =>
+                        string.Format("{0} {1}", x.Name, x.Order == SolrSortTypes.Desc ? "DESC" : "ASC")).ToArray()));
             }
 
 
             if (CurrentQuery.Facets.Any())
             {
-                request.AddQueryParameter("facet", "true");
-                request.AddQueryParameter("facet.mincount", "1");
+                request.AddParameter("facet", "true");
+                request.AddParameter("facet.mincount", "1");
 
                 foreach (var facet in CurrentQuery.Facets)
                 {
-                    request.AddQueryParameter("facet.field", facet.SolrName);
+                    request.AddParameter("facet.field", facet.SolrName);
                 }
             }
 
             if (CurrentQuery.Select != null)
             {
-                request.AddQueryParameter("fl", CurrentQuery.Select.GetSelectFields());
+                request.AddParameter("fl", CurrentQuery.Select.GetSelectFields());
 
             }
 
@@ -136,7 +138,7 @@ namespace LinqToSolr.Services
             return request;
         }
 
-        private RestRequest PrepareUpdateOrDeleteRequest<T>(T[] documentsToUpdate, object[] deleteDocIds, string deleteByQuery)
+        private SolrWebRequest PrepareUpdateOrDeleteRequest<T>(T[] documentsToUpdate, object[] deleteDocIds, string deleteByQuery)
         {
 
             var index = Configuration.GetIndex(typeof(T));
@@ -150,26 +152,25 @@ namespace LinqToSolr.Services
             }
 
             string path = string.Format("/solr/{0}/update", index);
-            var request = new RestRequest(path, Method.POST);
+            var request = new SolrWebRequest(path, SolrWebMethod.POST);
 
             var updateDocs = JsonConvert.SerializeObject(documentsToUpdate);
-            request.AddQueryParameter("wt", "json");
-            request.AddQueryParameter("commit", "true");
+            request.AddParameter("wt", "json");
+            request.AddParameter("commit", "true");
             if (documentsToUpdate != null && documentsToUpdate.Any())
             {
-                request.AddParameter("application/json", updateDocs, ParameterType.RequestBody);
+                request.Body = updateDocs;
             }
             else if (deleteDocIds != null && deleteDocIds.Any())
             {
-                request.AddParameter("application/json", JsonConvert.SerializeObject(new { delete = deleteDocIds }), ParameterType.RequestBody);
+                request.Body = JsonConvert.SerializeObject(new { delete = deleteDocIds });
             }
             else if (!string.IsNullOrEmpty(deleteByQuery))
             {
-                request.AddParameter("application/json", JsonConvert.SerializeObject(new { delete = new { query = deleteByQuery } }), ParameterType.RequestBody);
+                request.Body = JsonConvert.SerializeObject(new { delete = new { query = deleteByQuery } });
             }
 
 
-            request.RequestFormat = DataFormat.Json;
 
             return request;
         }
@@ -185,9 +186,14 @@ namespace LinqToSolr.Services
                 return;
             }
 
-            var result = JsonConvert.DeserializeObject<dynamic>(responce.Content);
 
-            throw new Exception("Oops! SOLR Says: " + result.error.msg.ToString());
+            if (!string.IsNullOrEmpty(responce.Content))
+            {
+                var result = JsonConvert.DeserializeObject<LinqToSolrResponse>(responce.Content);
+            }
+
+            if (LastResponse.Error != null)
+                throw new Exception("Oops! SOLR Says: " + LastResponse.Error.Message);
 
         }
 
@@ -202,9 +208,13 @@ namespace LinqToSolr.Services
                 return;
             }
 
-            var result = JsonConvert.DeserializeObject<dynamic>(responce.Content);
+            if (!string.IsNullOrEmpty(responce.Content))
+            {
+                var result = JsonConvert.DeserializeObject<dynamic>(responce.Content);
+            }
 
-            throw new Exception("Oops! SOLR Says: " + result.error.msg.ToString());
+            if (LastResponse.Error != null)
+                throw new Exception("Oops! SOLR Says: " + LastResponse.Error.Message);
 
         }
 
@@ -219,9 +229,13 @@ namespace LinqToSolr.Services
                 return;
             }
 
-            var result = JsonConvert.DeserializeObject<dynamic>(responce.Content);
+            if (!string.IsNullOrEmpty(responce.Content))
+            {
+                var result = JsonConvert.DeserializeObject<dynamic>(responce.Content);
+            }
 
-            throw new Exception("Oops! SOLR Says: " + result.error.msg.ToString());
+            if (LastResponse.Error != null)
+                throw new Exception("Oops! SOLR Says: " + LastResponse.Error.Message);
         }
 
         public void AddOrUpdate<T>(params T[] document)
@@ -255,6 +269,11 @@ namespace LinqToSolr.Services
             return Query(typeof(T), query) as ICollection<T>;
         }
 
+        private void ErrorHandler(object sender, Newtonsoft.Json.Serialization.ErrorEventArgs errorEventArgs)
+        {
+            errorEventArgs.ErrorContext.Handled = true;
+        }
+
         public object Query(Type elementType, LinqToSolrQuery query = null)
         {
             if (query != null)
@@ -273,15 +292,16 @@ namespace LinqToSolr.Services
 
             if (!string.IsNullOrEmpty(Configuration.SolrLogin) && !string.IsNullOrEmpty(Configuration.SolrPassword))
             {
-                Client.Authenticator = new HttpBasicAuthenticator(Configuration.SolrLogin, Configuration.SolrPassword);
+                //   Client.Authenticator = new HttpBasicAuthenticator(Configuration.SolrLogin, Configuration.SolrPassword);
             }
 
             var response = Client.Execute(PrepareQueryRequest(index));
+            LastResponse = new LinqToSolrResponse();
+            LastResponse.LastServiceUri = response.ResponseUri;
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new EntryPointNotFoundException(
-                    "Server returned 404 - Not Found. Check if solr url is correct or index name was correctly provided.");
+                throw new Exception("Server returned 404 - Not Found. Check if solr url is correct or index name was correctly provided.");
             }
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -310,8 +330,7 @@ namespace LinqToSolr.Services
                             ? CurrentQuery.Select.Type
                             : elementType);
 
-                    var genList = JsonConvert.DeserializeObject(
-                        JsonConvert.SerializeObject(LastResponse.Body.Documents), listMethod);
+                    var genList = JsonConvert.DeserializeObject(JsonConvert.SerializeObject(LastResponse.Body.Documents), listMethod, new JsonSerializerSettings { Error = ErrorHandler });
 
 
 
@@ -320,8 +339,8 @@ namespace LinqToSolr.Services
 
                         foreach (var facet in CurrentQuery.Facets)
                         {
-                            var content = JsonConvert.DeserializeObject<dynamic>(response.Content).facet_counts;
-                            var groups = content.facet_fields[facet.SolrName] as JArray;
+                            var content = JsonConvert.DeserializeObject<JArray>(response.Content)["facet_counts"];
+                            var groups = content["facet_fields"][facet.SolrName] as JArray;
 
                             LastResponse.Facets.Add(facet.SolrName,
                                 groups.Where((x, i) => i % 2 == 0).Select(x => ((JValue)x).Value).ToArray());
@@ -331,9 +350,13 @@ namespace LinqToSolr.Services
                     if (CurrentQuery.Select?.IsSingleField == true)
                     {
                         var fieldDelegate = ((LambdaExpression)CurrentQuery.Select.Expression).Compile();
-                        var selectMethod = typeof(Enumerable).GetMethods(BindingFlags.Static | BindingFlags.Public)
-                            .First(m => m.Name == "Select" && m.GetParameters().Count() == 2);
 
+#if PORTABLE || NETCORE
+                        
+                        var selectMethod = typeof(Enumerable).GetRuntimeMethods().First(m => m.Name == "Select" && m.GetParameters().Count() == 2);
+#else
+                        var selectMethod = typeof(Enumerable).GetMethods(BindingFlags.Static | BindingFlags.Public).First(m => m.Name == "Select" && m.GetParameters().Count() == 2);
+#endif
                         var fieldList = selectMethod.MakeGenericMethod(elementType, CurrentQuery.Select.Type)
                             .Invoke(genList, new[] { genList, fieldDelegate });
                         CurrentQuery = null;
@@ -347,8 +370,18 @@ namespace LinqToSolr.Services
 
                 if (CurrentQuery.IsGroupEnabled)
                 {
+#if PORTABLE || NETCORE
+                    var args =ElementType.GetTypeInfo().IsGenericTypeDefinition
+                        ? ElementType.GetTypeInfo().GenericTypeParameters
+                        : ElementType.GetTypeInfo().GenericTypeArguments;
+                    var _keyType = args[0];
+                    var _valueType = args[1];
+
+#else
                     var _keyType = ElementType.GetGenericArguments()[0];
                     var _valueType = ElementType.GetGenericArguments()[1];
+
+#endif
 
                     var solrConverterType = typeof(LinqToSolrGroupingResponseConverter<,>).MakeGenericType(_keyType, _valueType);
                     var converterInstance = Activator.CreateInstance(solrConverterType);
@@ -362,7 +395,10 @@ namespace LinqToSolr.Services
                 CurrentQuery = null;
                 return null;
             }
-            throw new MissingFieldException(LastResponse.Error.Message);
+            throw new Exception(LastResponse.Error.Message);
         }
+
+
+
     }
 }

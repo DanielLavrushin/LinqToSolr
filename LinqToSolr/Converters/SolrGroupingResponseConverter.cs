@@ -46,7 +46,11 @@ namespace LinqToSolr.Converters
 
                             var result = group["doclist"]["docs"].Select(x => x.ToObject<TValue>()).ToList();
 
+#if PORTABLE40
+                            rps.Add((TKey)Convert.ChangeType(group["groupValue"], typeof(TKey), null), result);
+#else
                             rps.Add((TKey)Convert.ChangeType(group["groupValue"], typeof(TKey)), result);
+#endif
                         }
 
 

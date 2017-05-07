@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Newtonsoft.Json;
@@ -25,7 +26,7 @@ namespace LinqToSolr.Data
             var fb = fieldExp as MemberExpression;
             if (fb != null)
             {
-#if NET40
+#if NET40 || NET35 || PORTABLE40
                 var dataMemberAttribute =
                     Attribute.GetCustomAttribute(fb.Member, typeof(JsonPropertyAttribute), true) as
                         JsonPropertyAttribute;

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -9,13 +8,27 @@ using System.Text;
 using LinqToSolr.Data;
 using LinqToSolr.Services;
 using Newtonsoft.Json;
+using System.ComponentModel;
+using System.Globalization;
+using System.Security;
+
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters;
+using Newtonsoft.Json.Utilities;
+using Newtonsoft.Json.Serialization;
 
 namespace LinqToSolr.Expressions
 {
-    internal class LinqToSolrQueryTranslator: ExpressionVisitor
+
+#if NET35
+    internal class LinqToSolrQueryTranslator: LinqToSolr.Expressions.ExpressionVisitorNet35
+#else
+    internal class LinqToSolrQueryTranslator: System.Linq.Expressions.ExpressionVisitor
+#endif
     {
         private StringBuilder sb;
         private bool _inRangeQuery;
+        private bool _inRangeEqualQuery;
         private ILinqToSolrService _service;
         private bool _isRedudant;
         private ICollection<string> _sortings;
@@ -38,7 +51,7 @@ namespace LinqToSolr.Expressions
         {
 
 
-#if NET40
+#if NET40 || NET35 || PORTABLE40
             var dataMemberAttribute =
                 Attribute.GetCustomAttribute(member, typeof(JsonPropertyAttribute), true) as
                     JsonPropertyAttribute;
@@ -62,7 +75,13 @@ namespace LinqToSolr.Expressions
 
             if (type.Name == "IGrouping`2")
             {
+#if PORTABLE || NETCORE
+                return type.GetTypeInfo().IsGenericTypeDefinition 
+    ? type.GetTypeInfo().GenericTypeParameters[1] 
+    : type.GetTypeInfo().GenericTypeArguments[1];
+#else
                 return type.GetGenericArguments()[1];
+#endif
             }
             return type;
         }
@@ -88,7 +107,7 @@ namespace LinqToSolr.Expressions
 
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
-            if (m.Method.DeclaringType == typeof(Queryable) && (m.Method.Name == "Where" || m.Method.Name == "First" || m.Method.Name == "FirstOrDefault"))
+            if (m.Method.Name == "Where" || m.Method.Name == "First" || m.Method.Name == "FirstOrDefault")
             {
                 var lambda = (LambdaExpression)StripQuotes(m.Arguments[1]);
 
@@ -100,14 +119,14 @@ namespace LinqToSolr.Expressions
                 Visit(arr);
                 return m;
             }
-            if (m.Method.DeclaringType == typeof(Queryable) && (m.Method.Name == "Take"))
+            if (m.Method.DeclaringType == typeof(IQueryable) && (m.Method.Name == "Take"))
             {
                 var takeNumber = (int)((ConstantExpression)m.Arguments[1]).Value;
                 _service.Configuration.Take = takeNumber;
                 Visit(m.Arguments[0]);
                 return m;
             }
-            if (m.Method.DeclaringType == typeof(Queryable) && (m.Method.Name == "Skip"))
+            if (m.Method.Name == "Skip")
             {
                 var skipNumber = (int)((ConstantExpression)m.Arguments[1]).Value;
                 _service.Configuration.Start = skipNumber;
@@ -116,7 +135,7 @@ namespace LinqToSolr.Expressions
             }
 
 
-            if (m.Method.DeclaringType == typeof(Queryable) && (m.Method.Name == "OrderBy" || m.Method.Name == "ThenBy"))
+            if (m.Method.Name == "OrderBy" || m.Method.Name == "ThenBy")
             {
                 var lambda = (LambdaExpression)StripQuotes(m.Arguments[1]);
 
@@ -127,7 +146,7 @@ namespace LinqToSolr.Expressions
                 return m;
             }
 
-            if (m.Method.DeclaringType == typeof(Queryable) && (m.Method.Name == "OrderByDescending" || m.Method.Name == "ThenByDescending"))
+            if (m.Method.Name == "OrderByDescending" || m.Method.Name == "ThenByDescending")
             {
                 var lambda = (LambdaExpression)StripQuotes(m.Arguments[1]);
                 _service.CurrentQuery.AddSorting(lambda.Body, SolrSortTypes.Desc);
@@ -139,7 +158,7 @@ namespace LinqToSolr.Expressions
 
 
 
-            if (m.Method.DeclaringType == typeof(Queryable) && (m.Method.Name == "Select"))
+            if (m.Method.Name == "Select")
             {
                 _service.CurrentQuery.Select = new SolrSelect(StripQuotes(m.Arguments[1]));
                 Visit(m.Arguments[0]);
@@ -209,7 +228,12 @@ namespace LinqToSolr.Expressions
 
                 _service.CurrentQuery.IsGroupEnabled = true;
                 var arr = StripQuotes(m.Arguments[1]);
+#if PORTABLE || NETCORE
+                var solrQueryTranslator = new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)arr).Body).Member.DeclaringType);
+#else
                 var solrQueryTranslator = new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)arr).Body).Member.ReflectedType);
+#endif
+
                 _service.CurrentQuery.GroupFields.Add(solrQueryTranslator.Translate(arr));
                 Visit(m.Arguments[0]);
 
@@ -248,7 +272,11 @@ namespace LinqToSolr.Expressions
 
             if (b.Left is ConstantExpression)
             {
-                throw new InvalidExpressionException("Failed to parse expression. Ensure the Solr fields are always come in the left part of comparison.");
+#if NETCORE || PORTABLE40 || PORTABLE
+                throw new Exception("Failed to parse expression. Ensure the Solr fields are always come in the left part of comparison.");
+#else
+                throw new System.Data.InvalidExpressionException("Failed to parse expression. Ensure the Solr fields are always come in the left part of comparison.");
+#endif
             }
             Visit(b.Left);
 
@@ -274,10 +302,17 @@ namespace LinqToSolr.Expressions
                     sb.Append(":[");
                     _inRangeQuery = true;
                     break;
-
                 case ExpressionType.LessThanOrEqual:
                     sb.Append(":[*");
                     _inRangeQuery = true;
+                    break;
+                case ExpressionType.GreaterThan:
+                    sb.Append(":{");
+                    _inRangeEqualQuery = true;
+                    break;
+                case ExpressionType.LessThan:
+                    sb.Append(":{*");
+                    _inRangeEqualQuery = true;
                     break;
 
                 default:
@@ -318,7 +353,7 @@ namespace LinqToSolr.Expressions
             else
             {
                 //handle in range query
-                if (_inRangeQuery)
+                if (_inRangeQuery || _inRangeEqualQuery)
                 {
                     if (sb[sb.Length - 1] == '*')
                     {
@@ -330,7 +365,7 @@ namespace LinqToSolr.Expressions
                         AppendConstValue(c.Value);
                         sb.Append(" TO *");
                     }
-                    sb.Append("]");
+                    sb.Append(_inRangeEqualQuery ? "}"  : "]");
                     _inRangeQuery = false;
                 }
                 else
@@ -344,7 +379,16 @@ namespace LinqToSolr.Expressions
 
         private void AppendConstValue(object val)
         {
+
+
+#if PORTABLE40
+            var isArray = val.GetType().IsAssignableFrom(typeof(IEnumerable));
+#elif PORTABLE || NETCORE
+                var isArray = val.GetType().GetTypeInfo().IsArray;
+#else
             var isArray = val.GetType().GetInterface("IEnumerable`1") != null;
+#endif
+
             //Set date format of Solr 1995-12-31T23:59:59.999Z
             if (val.GetType() == typeof(DateTime))
             {
@@ -353,7 +397,7 @@ namespace LinqToSolr.Expressions
             else if (!(val is string) && isArray)
             {
                 var array = (IEnumerable)val;
-                var arrstring = string.Join(" OR ", array.Cast<object>().Select(x => string.Format("\"{0}\"", x)));
+                var arrstring = string.Join(" OR ", array.Cast<object>().Select(x => string.Format("\"{0}\"", x)).ToArray());
                 sb.AppendFormat(": ({0})", arrstring);
 
             }
@@ -377,7 +421,11 @@ namespace LinqToSolr.Expressions
             return base.VisitMemberAssignment(node);
         }
 
+#if NET35
+        protected override Expression VisitMemberAccess(MemberExpression m)
+#else
         protected override Expression VisitMember(MemberExpression m)
+#endif
         {
             if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
             {

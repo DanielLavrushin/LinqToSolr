@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Newtonsoft.Json;
+using System.Reflection;
 
 namespace LinqToSolr.Data
 {
@@ -34,7 +35,7 @@ namespace LinqToSolr.Data
             if (fb != null)
             {
                 var dataMemberAttribute =
-                    fb.Member.GetCustomAttributes(typeof(JsonPropertyAttribute), false)[0] as JsonPropertyAttribute;
+                    fb.Member.GetCustomAttributes(typeof(JsonPropertyAttribute), false).ToArray()[0] as JsonPropertyAttribute;
 
                 var k = dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.PropertyName)
                       ? dataMemberAttribute.PropertyName
@@ -50,7 +51,11 @@ namespace LinqToSolr.Data
             //do not use this - not ready
             var obj = Activator.CreateInstance<T>();
 
+#if PORTABLE || NETSTANDARD1_6 || NETSTANDARD2_0
+            var props = obj.GetType().GetRuntimeProperties();
+#else
             var props = obj.GetType().GetProperties();
+#endif
 
             foreach (var p in props)
             {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using LinqToSolr.Data;
+using LinqToSolr.Query;
 
 namespace LinqToSolr.Services
 {
@@ -15,6 +16,7 @@ namespace LinqToSolr.Services
 
         LinqToSolrQuery CurrentQuery { get; set; }
 
+        LinqToSolrQueriable<T> AsQueryable<T>();
 
         void AddOrUpdate<T>(params T[] document);
         void Delete<T>(params object[] documentId);

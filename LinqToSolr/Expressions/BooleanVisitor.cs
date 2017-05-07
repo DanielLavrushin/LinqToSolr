@@ -2,7 +2,11 @@
 
 namespace LinqToSolr.Expressions
 {
+#if NET35
+     internal class BooleanVisitor: LinqToSolr.Expressions.ExpressionVisitorNet35
+#else
     internal class BooleanVisitor: ExpressionVisitor
+#endif
     {
         public static Expression Process(Expression expression)
         {
@@ -10,6 +14,9 @@ namespace LinqToSolr.Expressions
         }
 
         int _bypass;
+
+
+
         protected override Expression VisitBinary(BinaryExpression node)
         {
             if (_bypass == 0 && node.Type == typeof(bool))
@@ -28,6 +35,7 @@ namespace LinqToSolr.Expressions
             }
             return base.VisitBinary(node);
         }
+
         protected override Expression VisitUnary(UnaryExpression node)
         {
             if (_bypass == 0 && node.Type == typeof(bool))
@@ -45,15 +53,26 @@ namespace LinqToSolr.Expressions
             }
             return base.VisitUnary(node);
         }
+
+
+#if NET35
+        protected override Expression VisitMemberAccess(MemberExpression node)
+        {
+            if (_bypass == 0 && node.Type == typeof(bool))
+            {
+                return Expression.Equal(base.VisitMemberAccess(node), Expression.Constant(true));
+            }
+            return base.VisitMemberAccess(node);
+        }
+#else
         protected override Expression VisitMember(MemberExpression node)
         {
             if (_bypass == 0 && node.Type == typeof(bool))
             {
-                return Expression.Equal(
-                    base.VisitMember(node),
-                    Expression.Constant(true));
+                return Expression.Equal(base.VisitMember(node), Expression.Constant(true));
             }
             return base.VisitMember(node);
         }
+#endif
     }
 }
