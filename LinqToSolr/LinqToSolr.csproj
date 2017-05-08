@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
   <PropertyGroup>
-    <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net45;net40;net35;net461;netcoreapp1.0;netstandard1.6;netstandard2.0;portable-net45+win8+wpa81+wp8;portable-net40+win8+wpa81+wp8+sl5</TargetFrameworks>
+    <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net45;net452;net40;net35;net461;netcoreapp1.1;netcoreapp1.0;netstandard1.6;netstandard2.0;portable-net45+win8+wpa81+wp8;portable-net40+win8+wpa81+wp8+sl5</TargetFrameworks>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
+    <RuntimeIdentifiers>win7-x64</RuntimeIdentifiers>
     <AssemblyVersion>2.1.0.2</AssemblyVersion>
     <FileVersion>2.1.0.2</FileVersion>
     <VersionPrefix>2.1.0.2</VersionPrefix>
