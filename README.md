@@ -1,4 +1,15 @@
 # LinqToSolr
+![](https://img.shields.io/badge/.NET%203.5-compatible-green.svg)
+![](https://img.shields.io/badge/.NET%204-compatible-green.svg)
+![](https://img.shields.io/badge/.NET%204.5-compatible-green.svg)
+![](https://img.shields.io/badge/.NET%204.6.1-compatible-green.svg)
+
+![](https://img.shields.io/badge/.NET%20Core%201.0-compatible-orange.svg)
+![](https://img.shields.io/badge/.NET%20Standard%201.6&2.0-compatible-orange.svg)
+
+![](https://img.shields.io/badge/Portable%20(Profile259)-compatible-blue.svg)
+![](https://img.shields.io/badge/Portable%20(Profile328)-compatible-blue.svg)
+
 This is a lightwave C# library which provides Linq support for Solr.
 LinqToSolr implements IQueriable<> interface, which allows you to call Solr API with linq expressions directly.
 [NUGET Package](https://www.nuget.org/packages/LinqToSolr/)
