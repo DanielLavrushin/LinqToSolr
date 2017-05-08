@@ -5,6 +5,7 @@
 ![](https://img.shields.io/badge/.NET%204.6.1-compatible-green.svg)
 
 ![](https://img.shields.io/badge/.NET%20Core%201.0-compatible-orange.svg)
+![](https://img.shields.io/badge/.NET%20Core%201.1-compatible-orange.svg)
 ![](https://img.shields.io/badge/.NET%20Standard%201.6&2.0-compatible-orange.svg)
 
 ![](https://img.shields.io/badge/Portable%20(Profile259)-compatible-blue.svg)
