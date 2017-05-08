@@ -186,8 +186,8 @@ namespace LinqToSolr.Services
             else
             {
                 var content = new System.Net.Http.StringContent(request.Body, Encoding.UTF8, "application/json");
-                var result = client.PostAsync(paramStr, content).Result;
-                var webResponse = client.GetAsync(paramStr).Result;
+                var webResponse = client.PostAsync(paramStr, content).Result;
+                //var webResponse = client.GetAsync(paramStr).Result;
                 response.Content = webResponse.Content.ReadAsStringAsync().Result;
                 response.StatusCode = webResponse.StatusCode;
             }
