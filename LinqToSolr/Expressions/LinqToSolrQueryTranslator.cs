@@ -119,7 +119,7 @@ namespace LinqToSolr.Expressions
                 Visit(arr);
                 return m;
             }
-            if (m.Method.DeclaringType == typeof(IQueryable) && (m.Method.Name == "Take"))
+            if (m.Method.Name == "Take")
             {
                 var takeNumber = (int)((ConstantExpression)m.Arguments[1]).Value;
                 _service.Configuration.Take = takeNumber;

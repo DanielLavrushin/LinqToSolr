@@ -3,9 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using LinqToSolr.Services;
 using LinqToSolr.Data;
-using NUnit.Framework;
 
-namespace LinqToSolr.Test
+#if DNXCORE50
+using Xunit;
+using Test = Xunit.FactAttribute;
+using Assert = LinqToSolr.Tests.XUnitAssert;
+#else
+using NUnit.Framework;
+#endif
+
+
+namespace LinqToSolr.Tests
 {
     public class TestCoreDoc
     {

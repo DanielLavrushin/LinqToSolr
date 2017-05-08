@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 
 namespace LinqToSolr.Converters
 {
-    public class LinqToSolrGroupingResponseConverter<TKey, TValue>: JsonConverter
+    internal class LinqToSolrGroupingResponseConverter<TKey, TValue>: JsonConverter
     {
         private Type _documentType;
         private IEnumerable<IGrouping<TKey, TValue>> _groups;
@@ -46,10 +46,12 @@ namespace LinqToSolr.Converters
 
                             var result = group["doclist"]["docs"].Select(x => x.ToObject<TValue>()).ToList();
 
-#if PORTABLE40
+#if PORTABLE40 || PORTABLE
                             rps.Add((TKey)Convert.ChangeType(group["groupValue"], typeof(TKey), null), result);
 #else
-                            rps.Add((TKey)Convert.ChangeType(group["groupValue"], typeof(TKey)), result);
+                            var tc = System.ComponentModel.TypeDescriptor.GetConverter(typeof(TKey));
+                            var obj = (TKey)tc.ConvertFromString(group["groupValue"].ToString());
+                            rps.Add(obj, result);
 #endif
                         }
 

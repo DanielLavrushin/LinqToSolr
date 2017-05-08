@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
   <PropertyGroup>
-    <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net45;net40;net35;net461;netstandard1.6;netstandard2.0;portable-net45+win8+wpa81+wp8;portable-net40+win8+wpa81+wp8+sl5;;netcoreapp1.1;netcoreapp1.0;</TargetFrameworks>
+    <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net45;net40;net35;net461;netcoreapp1.0;netstandard1.6;netstandard2.0;portable-net45+win8+wpa81+wp8;portable-net40+win8+wpa81+wp8+sl5</TargetFrameworks>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <AssemblyVersion>2.1.0.2</AssemblyVersion>
     <FileVersion>2.1.0.2</FileVersion>
-    <VersionPrefix>2.0.0.1</VersionPrefix>
+    <VersionPrefix>2.1.0.2</VersionPrefix>
     <VersionSuffix>alfa</VersionSuffix>
     <Authors>Daniel Lavrushin</Authors>
     <Company></Company>
@@ -22,9 +22,11 @@
     <RepositoryType>git</RepositoryType>
     <RootNamespace>LinqToSolr</RootNamespace>
     <AssemblyName>LinqToSolr</AssemblyName>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <MinClientVersion>2.12</MinClientVersion>
+    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>2.1.0.2-prerelease</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)'=='net461'">
     <AssemblyTitle>LinqToSolr</AssemblyTitle>
@@ -113,13 +115,7 @@
     <NugetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile259</NugetTargetMoniker>
     <LanguageTargets>$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets</LanguageTargets>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == 'portable-net45+win8+sl5;'">
-    <AssemblyTitle>LinqToSolr Portable</AssemblyTitle>
-    <DefineConstants>PORTABLE</DefineConstants>
-    <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Profile259</TargetFrameworkProfile>
-    <NugetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile259</NugetTargetMoniker>
-    <LanguageTargets>$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets</LanguageTargets>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 </Project>

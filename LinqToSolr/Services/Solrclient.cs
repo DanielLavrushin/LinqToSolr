@@ -159,7 +159,7 @@ namespace LinqToSolr.Services
             else
             {
                 webRequest.Method = "POST";
-                webRequest.ContentType = "application/x-www-form-urlencoded";
+                webRequest.ContentType = "application/json";
                 webRequest.ContentLength = request.Body.Length;
                 var data = Encoding.UTF8.GetBytes(request.Body);
                 using (var stream = webRequest.GetRequestStream())

@@ -54,7 +54,11 @@ namespace LinqToSolr.Query
 
     public static class SolrQuaryableExtensions
     {
+#if NETSTANDARD1_6
+        public static IEnumerable<IGrouping<string, TKey>> GroupByFacets<TSource, TKey>(this IEnumerable<TSource> enumerable, params Expression<Func<TSource, TKey>>[] expression)
+#else
         public static IEnumerable<IGrouping<string, TKey>> GroupByFacets<TSource, TKey>(this IQueryable<TSource> enumerable, params Expression<Func<TSource, TKey>>[] expression)
+#endif
         {
             var query = enumerable as LinqToSolrQueriable<TSource>;
             if (query == null) throw new ArgumentException("GroupBySolr must be invoked as SolrQueryable extension");

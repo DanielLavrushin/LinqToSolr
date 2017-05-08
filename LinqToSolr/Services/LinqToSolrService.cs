@@ -339,7 +339,7 @@ namespace LinqToSolr.Services
 
                         foreach (var facet in CurrentQuery.Facets)
                         {
-                            var content = JsonConvert.DeserializeObject<JArray>(response.Content)["facet_counts"];
+                            var content = JsonConvert.DeserializeObject<JObject>(response.Content)["facet_counts"];
                             var groups = content["facet_fields"][facet.SolrName] as JArray;
 
                             LastResponse.Facets.Add(facet.SolrName,
