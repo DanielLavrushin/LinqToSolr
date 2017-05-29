@@ -74,6 +74,16 @@ namespace LinqToSolr.Services
             request.AddParameter("rows", Configuration.Take.ToString());
             request.AddParameter("start", Configuration.Start.ToString());
 
+            if (CurrentQuery.JoinFields.Any())
+            {
+                foreach (var joiner in CurrentQuery.JoinFields)
+                {
+                    var joinCore = Configuration.GetIndex(joiner.PropertyRealType);
+                    var joinstr = string.Format("from={0} to={1} fromIndex={2}", joiner.ForeignKey, joiner.FieldKey, joinCore);
+                    request.AddParameter("q", "{!join "+ joinstr + "}");
+                }
+
+            }
 
             if (CurrentQuery.IsGroupEnabled)
             {
@@ -318,7 +328,7 @@ namespace LinqToSolr.Services
 
             LastResponse = JsonConvert.DeserializeObject<LinqToSolrResponse>(response.Content);
             LastResponse.LastServiceUri = response.ResponseUri;
-            if (LastResponse.Header.Status == 0)
+            if (LastResponse.Header.Status == 0) 
             {
                 if (LastResponse.Body != null)
                 {

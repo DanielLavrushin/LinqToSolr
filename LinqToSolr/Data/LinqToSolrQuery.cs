@@ -171,6 +171,7 @@ namespace LinqToSolr.Data
         public Type CurrentType { get; set; }
         public SolrSelect Select { get; set; }
 
+        internal ICollection<LinqToSolrJoiner> JoinFields { get; set; }
 
         public LinqToSolrQuery()
         {
@@ -178,6 +179,7 @@ namespace LinqToSolr.Data
             Facets = new List<LinqToSolrFacet>();
             Sortings = new List<LinqToSolrSort>();
             GroupFields = new List<string>();
+            JoinFields = new List<LinqToSolrJoiner>();
         }
 
         public LinqToSolrQuery AddFilter(LambdaExpression field, params object[] values)
