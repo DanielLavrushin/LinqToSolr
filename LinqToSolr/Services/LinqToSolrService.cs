@@ -182,6 +182,7 @@ namespace LinqToSolr.Services
 
 
 
+
             return request;
         }
 
@@ -202,7 +203,8 @@ namespace LinqToSolr.Services
                 var result = JsonConvert.DeserializeObject<LinqToSolrResponse>(responce.Content);
             }
 
-            if (LastResponse.Error != null)
+
+            if (LastResponse.Error != null) 
                 throw new Exception("Oops! SOLR Says: " + LastResponse.Error.Message);
 
         }

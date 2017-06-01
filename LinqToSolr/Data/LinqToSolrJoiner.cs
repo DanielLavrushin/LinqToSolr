@@ -31,7 +31,22 @@ namespace LinqToSolr.Data
             FieldKey = GetFieldKey();
 
         }
+        public LinqToSolrJoiner(MemberInfo member)
+        {
+            Field = member.Name;
+            ObjectType = member.DeclaringType;
+#if PORTABLE || NETSTANDARD1_6 || NETSTANDARD2_0
 
+            FieldProperty = ObjectType.GetRuntimeProperty(Field);
+#else
+            FieldProperty = ObjectType.GetProperty(Field);
+#endif
+            PropertyRealType = GetRealPropertyType();
+
+            ForeignKey = GetForeignKey();
+            FieldKey = GetFieldKey();
+
+        }
 
         public Type GetRealPropertyType()
         {
@@ -40,7 +55,7 @@ namespace LinqToSolr.Data
             var isGenericArray =  FieldProperty.PropertyType.IsArray && FieldProperty.PropertyType.GetTypeInfo().IsGenericTypeDefinition;
             return isGenericArray ? FieldProperty.PropertyType.GetTypeInfo().GenericTypeParameters[0] : FieldProperty.PropertyType;
 #else
-            var isGenericArray =  FieldProperty.PropertyType.IsArray && FieldProperty.PropertyType.IsGenericType;
+            var isGenericArray = FieldProperty.PropertyType.IsArray && FieldProperty.PropertyType.IsGenericType;
             return isGenericArray ? FieldProperty.PropertyType.GetGenericArguments()[0] : FieldProperty.PropertyType;
 #endif
 
@@ -74,5 +89,7 @@ namespace LinqToSolr.Data
 
             return null;
         }
+
+     
     }
 }
