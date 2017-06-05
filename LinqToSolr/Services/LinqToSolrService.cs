@@ -80,7 +80,7 @@ namespace LinqToSolr.Services
                 {
                     var joinCore = Configuration.GetIndex(joiner.PropertyRealType);
                     var joinstr = string.Format("from={0} to={1} fromIndex={2}", joiner.ForeignKey, joiner.FieldKey, joinCore);
-                    request.AddParameter("q", "{!join "+ joinstr + "}");
+                    request.AddParameter("q", "{!join " + joinstr + "}");
                 }
 
             }
@@ -148,7 +148,7 @@ namespace LinqToSolr.Services
             return request;
         }
 
-        private SolrWebRequest PrepareUpdateOrDeleteRequest<T>(T[] documentsToUpdate, object[] deleteDocIds, string deleteByQuery)
+        private SolrWebRequest PrepareUpdateOrDeleteRequest<T>(T[] documentsToUpdate, object[] deleteDocIds, string deleteByQuery, bool softCommit = false)
         {
 
             var index = Configuration.GetIndex(typeof(T));
@@ -164,9 +164,20 @@ namespace LinqToSolr.Services
             string path = string.Format("/solr/{0}/update", index);
             var request = new SolrWebRequest(path, SolrWebMethod.POST);
 
-            var updateDocs = JsonConvert.SerializeObject(documentsToUpdate);
+            var updateDocs = JsonConvert.SerializeObject(documentsToUpdate,
+                Newtonsoft.Json.Formatting.None,
+                new JsonSerializerSettings
+                {
+                    NullValueHandling = NullValueHandling.Ignore
+                });
+
             request.AddParameter("wt", "json");
             request.AddParameter("commit", "true");
+            if (softCommit)
+            {
+                request.AddParameter("softCommit", "true");
+
+            }
             if (documentsToUpdate != null && documentsToUpdate.Any())
             {
                 request.Body = updateDocs;
@@ -186,9 +197,9 @@ namespace LinqToSolr.Services
             return request;
         }
 
-        private void PerformUpdate<T>(T[] documentsToUpdate)
+        private void PerformUpdate<T>(T[] documentsToUpdate, bool softCommit = false)
         {
-            var request = PrepareUpdateOrDeleteRequest(documentsToUpdate, null, null);
+            var request = PrepareUpdateOrDeleteRequest(documentsToUpdate, null, null, softCommit);
             var responce = Client.Execute(request);
 
             if (responce.StatusCode == HttpStatusCode.OK || responce.StatusCode == HttpStatusCode.NoContent)
@@ -204,14 +215,14 @@ namespace LinqToSolr.Services
             }
 
 
-            if (LastResponse.Error != null) 
+            if (LastResponse.Error != null)
                 throw new Exception("Oops! SOLR Says: " + LastResponse.Error.Message);
 
         }
 
-        private void PerformDelete<T>(string query)
+        private void PerformDelete<T>(string query, bool softCommit = false)
         {
-            var request = PrepareUpdateOrDeleteRequest<T>(null, null, query);
+            var request = PrepareUpdateOrDeleteRequest<T>(null, null, query, softCommit);
             var responce = Client.Execute(request);
 
             if (responce.StatusCode == HttpStatusCode.OK || responce.StatusCode == HttpStatusCode.NoContent)
@@ -230,10 +241,10 @@ namespace LinqToSolr.Services
 
         }
 
-        private void PerformDelete<T>(object[] documentIds)
+        private void PerformDelete<T>(object[] documentIds, bool softCommit = false)
         {
 
-            var request = PrepareUpdateOrDeleteRequest<T>(null, documentIds, null);
+            var request = PrepareUpdateOrDeleteRequest<T>(null, documentIds, null, softCommit);
             var responce = Client.Execute(request);
             if (responce.StatusCode == HttpStatusCode.OK || responce.StatusCode == HttpStatusCode.NoContent)
             {
@@ -250,30 +261,38 @@ namespace LinqToSolr.Services
                 throw new Exception("Oops! SOLR Says: " + LastResponse.Error.Message);
         }
 
-        public void AddOrUpdate<T>(params T[] document)
+        public void AddOrUpdate<T>(T[] document, bool softCommit = false)
         {
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
 
-            PerformUpdate(document);
+            PerformUpdate(document, softCommit);
+        }
+        public void AddOrUpdate<T>(T document, bool softCommit = false)
+        {
+            AddOrUpdate<T>(new[] { document }, softCommit);
         }
 
-        public void Delete<T>(params object[] documentId)
+        public void Delete<T>(object documentId, bool softCommit = false)
+        {
+            Delete<T>(new object[] { documentId }, softCommit);
+        }
+
+        public void Delete<T>(object[] documentId, bool softCommit = false)
         {
             if (documentId == null)
                 throw new ArgumentNullException(nameof(documentId));
 
-            PerformDelete<T>(documentId);
+            PerformDelete<T>(documentId, softCommit);
         }
-
-        public void Delete<T>(Expression<Func<T, bool>> query)
+        public void Delete<T>(Expression<Func<T, bool>> query, bool softCommit = false)
         {
             if (query == null)
                 throw new ArgumentNullException(nameof(query));
 
             var translator = new LinqToSolrQueryTranslator(this, typeof(T));
             var queryToStr = translator.Translate(query);
-            PerformDelete<T>(queryToStr);
+            PerformDelete<T>(queryToStr, softCommit);
         }
 
         public ICollection<T> Query<T>(LinqToSolrQuery query = null)
@@ -330,7 +349,7 @@ namespace LinqToSolr.Services
 
             LastResponse = JsonConvert.DeserializeObject<LinqToSolrResponse>(response.Content);
             LastResponse.LastServiceUri = response.ResponseUri;
-            if (LastResponse.Header.Status == 0) 
+            if (LastResponse.Header.Status == 0)
             {
                 if (LastResponse.Body != null)
                 {

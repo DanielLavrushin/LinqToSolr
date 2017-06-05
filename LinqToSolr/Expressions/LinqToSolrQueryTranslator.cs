@@ -463,17 +463,15 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
                     if (joinAttr != null)
                     {
                         var fieldName = GetFieldName(m.Member);
-                        var joiner = new LinqToSolrJoiner(ce.Member.Name, m.Member.DeclaringType);
-                        var joinstr = string.Format("!join from={0} to={1} fromIndex={2}",  joiner.FieldKey, joiner.ForeignKey, _service.Configuration.GetIndex(joiner.PropertyRealType));
-                        sb.Append("{"+ joinstr + "}" + fieldName);
+                        var topType = ce.Expression as ParameterExpression;
+                        if (topType != null)
+                        {
+                            var joiner = new LinqToSolrJoiner(ce.Member.Name, topType.Type);
+                            var joinstr = string.Format("!join from={0} to={1} fromIndex={2}", joiner.FieldKey, joiner.ForeignKey, _service.Configuration.GetIndex(joiner.PropertyRealType));
+                            sb.Append("{" + joinstr + "}" + fieldName);
+                        }
                     }
 
-
-#if NET35
-                   //Visit(ce);
-#else
-                   //Visit(ce);
-#endif
 
                 }
 
