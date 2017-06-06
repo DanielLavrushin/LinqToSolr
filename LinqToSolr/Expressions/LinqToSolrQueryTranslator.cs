@@ -33,6 +33,8 @@ namespace LinqToSolr.Expressions
         private bool _isRedudant;
         private ICollection<string> _sortings;
         private Type _elementType;
+        internal bool IsMultiList;
+
         internal LinqToSolrQueryTranslator(ILinqToSolrService query)
         {
             _service = query;
@@ -193,7 +195,10 @@ namespace LinqToSolr.Expressions
                     else
                     {
                         var newExpr = Expression.Equal(m.Object, m.Arguments[0]);
-                        Visit(newExpr);
+                        var expr = new LinqToSolrQueryTranslator(_service, m.Arguments[0].Type);
+                        expr.IsMultiList = true;
+                        var multilistfq = expr.Translate(newExpr);
+                        sb.AppendFormat("{0}", multilistfq);
                     }
 
 
@@ -365,7 +370,7 @@ namespace LinqToSolr.Expressions
                         AppendConstValue(c.Value);
                         sb.Append(" TO *");
                     }
-                    sb.Append(_inRangeEqualQuery ? "}"  : "]");
+                    sb.Append(_inRangeEqualQuery ? "}" : "]");
                     _inRangeQuery = false;
                 }
                 else
@@ -405,7 +410,15 @@ namespace LinqToSolr.Expressions
             {
                 if (val.ToString().Contains(" ") && !val.ToString().Contains("*"))
                 {
-                    sb.Append(string.Format("\"{0}\"", val));
+                    if (IsMultiList)
+                    {
+                        sb.Append(string.Format("({0})", val));
+                    }
+                    else
+                    {
+
+                        sb.Append(string.Format("\"{0}\"", val));
+                    }
 
                 }
                 else
