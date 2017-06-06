@@ -132,6 +132,11 @@ namespace LinqToSolr.Services
                 request.AddParameter("facet", "true");
                 request.AddParameter("facet.mincount", "1");
 
+                if (Configuration.FacetsLimit > 0)
+                {
+                    request.AddParameter("facet.limit", Configuration.FacetsLimit.ToString());
+                }
+
                 foreach (var facet in CurrentQuery.Facets)
                 {
                     request.AddParameter("facet.field", facet.SolrName);

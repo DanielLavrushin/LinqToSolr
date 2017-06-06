@@ -12,6 +12,7 @@ namespace LinqToSolr.Data
         public int Take { get; set; }
         public int Start { get; set; }
         public string EndPoint { get; set; }
+        public int FacetsLimit { get; set; }
 
         public ICollection<LinqToSolrIndexMapping> IndexMappings { get; set; }
 
@@ -42,7 +43,11 @@ namespace LinqToSolr.Data
             IndexMappings.Add(new LinqToSolrIndexMapping(type, index));
             return this;
         }
-
+        public LinqToSolrRequestConfiguration SetFacetsLimit(int limit)
+        {
+            this.FacetsLimit = limit;
+            return this;
+        }
         public LinqToSolrRequestConfiguration MapIndexFor<T>(string index)
         {
             return MapIndexFor(typeof(T), index);

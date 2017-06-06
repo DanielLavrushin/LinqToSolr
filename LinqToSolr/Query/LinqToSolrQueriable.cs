@@ -65,7 +65,7 @@ namespace LinqToSolr.Query
                 var query = enumerable as LinqToSolrQueriable<TSource>;
                 if (query == null) throw new ArgumentException("'Include' must be invoked as SolrQueryable extension");
 
-                var service = ((LinqToSolrProvider) query.Provider).Service;
+                var service = ((LinqToSolrProvider)query.Provider).Service;
                 service.CurrentQuery = service.CurrentQuery ?? new LinqToSolrQuery();
 
                 foreach (var prop in properties)
@@ -77,10 +77,20 @@ namespace LinqToSolr.Query
             }
             return enumerable;
         }
+
 #if NETSTANDARD1_6
         public static IEnumerable<IGrouping<string, TKey>> GroupByFacets<TSource, TKey>(this IEnumerable<TSource> enumerable, params Expression<Func<TSource, TKey>>[] expression)
 #else
         public static IEnumerable<IGrouping<string, TKey>> GroupByFacets<TSource, TKey>(this IQueryable<TSource> enumerable, params Expression<Func<TSource, TKey>>[] expression)
+#endif
+        {
+            return GroupByFacets(enumerable, 0, expression);
+        }
+
+#if NETSTANDARD1_6
+        public static IEnumerable<IGrouping<string, TKey>> GroupByFacets<TSource, TKey>(this IEnumerable<TSource> enumerable, int facetsLimit, params Expression<Func<TSource, TKey>>[] expression)
+#else
+        public static IEnumerable<IGrouping<string, TKey>> GroupByFacets<TSource, TKey>(this IQueryable<TSource> enumerable, int facetsLimit, params Expression<Func<TSource, TKey>>[] expression)
 #endif
         {
             var query = enumerable as LinqToSolrQueriable<TSource>;
@@ -96,7 +106,10 @@ namespace LinqToSolr.Query
 
             service.Configuration.Start = 0;
             service.Configuration.Take = 0;
-
+            if (facetsLimit > 0)
+            {
+                service.Configuration.FacetsLimit = facetsLimit;
+            }
             var result = query.ToList();
 
             service.Configuration.Start = oldStart;
