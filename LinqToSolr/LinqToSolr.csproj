@@ -3,8 +3,8 @@
     <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net45;net452;net40;net35;net461;netcoreapp1.1;netcoreapp1.0;netstandard1.6;netstandard2.0;portable-net45+win8+wpa81+wp8;portable-net40+win8+wpa81+wp8+sl5</TargetFrameworks>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <RuntimeIdentifiers>win7-x64</RuntimeIdentifiers>
-    <AssemblyVersion>2.1.0.3</AssemblyVersion>
-    <FileVersion>2.1.0.3</FileVersion>
+    <AssemblyVersion>2.1.0.5</AssemblyVersion>
+    <FileVersion>2.1.0.5</FileVersion>
     <VersionPrefix>2.1.0.2</VersionPrefix>
     <VersionSuffix>alfa</VersionSuffix>
     <Authors>Daniel Lavrushin</Authors>
@@ -26,8 +26,8 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <MinClientVersion>2.12</MinClientVersion>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>2.1.0.3</Version>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Version>2.1.0.5</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)'=='net461'">
     <AssemblyTitle>LinqToSolr</AssemblyTitle>

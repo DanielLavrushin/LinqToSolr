@@ -18,8 +18,10 @@ namespace LinqToSolr.Services
 
         LinqToSolrQueriable<T> AsQueryable<T>();
 
-        void AddOrUpdate<T>(params T[] document);
-        void Delete<T>(params object[] documentId);
-        void Delete<T>(Expression<Func<T, bool>> query);
+        void AddOrUpdate<T>(T[] document, bool softCommit = false);
+        void AddOrUpdate<T>(T document, bool softCommit = false);
+        void Delete<T>(object[] documentId, bool softCommit = false);
+        void Delete<T>(object documentId, bool softCommit = false);
+        void Delete<T>(Expression<Func<T, bool>> query, bool softCommit = false);
     }
 }
