@@ -3,8 +3,8 @@
     <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net45;net452;net40;net35;net461;netcoreapp1.1;netcoreapp1.0;netstandard1.6;netstandard2.0;portable-net45+win8+wpa81+wp8;portable-net40+win8+wpa81+wp8+sl5</TargetFrameworks>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <RuntimeIdentifiers>win7-x64</RuntimeIdentifiers>
-    <AssemblyVersion>2.1.0.5</AssemblyVersion>
-    <FileVersion>2.1.0.5</FileVersion>
+    <AssemblyVersion>2.1.0.6</AssemblyVersion>
+    <FileVersion>2.1.0.6</FileVersion>
     <VersionPrefix>2.1.0.2</VersionPrefix>
     <VersionSuffix>alfa</VersionSuffix>
     <Authors>Daniel Lavrushin</Authors>
@@ -17,9 +17,9 @@
     <PackageId>LinqToSolr</PackageId>
     <PackageTags>linqtosolr,solr,linq</PackageTags>
     <PackageIconUrl></PackageIconUrl>
-    <PackageProjectUrl>https://www.nuget.org/packages/LinqToSolr/</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/DanielLavrushin/LinqToSolr</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/DanielLavrushin/LinqToSolr/blob/master/LICENSE</PackageLicenseUrl>
-    <RepositoryUrl>https://github.com/DanielLavrushin/LinqToSolr</RepositoryUrl>
+    <RepositoryUrl>https://www.nuget.org/packages/LinqToSolr/</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RootNamespace>LinqToSolr</RootNamespace>
     <AssemblyName>LinqToSolr</AssemblyName>
@@ -27,7 +27,7 @@
     <MinClientVersion>2.12</MinClientVersion>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>2.1.0.5</Version>
+    <Version>2.1.0.6</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)'=='net461'">
     <AssemblyTitle>LinqToSolr</AssemblyTitle>
