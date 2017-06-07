@@ -5,6 +5,7 @@ namespace LinqToSolr.Data
     public interface ILinqToSolrResponse
     {
         int FoundDocuments { get; set; }
+        string Content { get; set; }
         Uri LastServiceUri { get; set; }
         LinqToSolrResponseHeader Header { get; set; }
         LinqToSolrResponseBody Body { get; set; }

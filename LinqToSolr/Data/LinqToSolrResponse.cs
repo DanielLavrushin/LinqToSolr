@@ -7,6 +7,7 @@ namespace LinqToSolr.Data
     {
         public int FoundDocuments { get; set; }
         public Uri LastServiceUri { get; set; }
+        public string Content { get; set; }
 
         [JsonProperty("responseHeader")]
         public LinqToSolrResponseHeader Header { get; set; }

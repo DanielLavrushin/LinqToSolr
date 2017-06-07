@@ -205,44 +205,16 @@ namespace LinqToSolr.Services
         private void PerformUpdate<T>(T[] documentsToUpdate, bool softCommit = false)
         {
             var request = PrepareUpdateOrDeleteRequest(documentsToUpdate, null, null, softCommit);
-            var responce = Client.Execute(request);
+            FinalizeResponse(request);
 
-            if (responce.StatusCode == HttpStatusCode.OK || responce.StatusCode == HttpStatusCode.NoContent)
-            {
-                LastResponse = new LinqToSolrResponse { LastServiceUri = responce.ResponseUri };
-                return;
-            }
-
-
-            if (!string.IsNullOrEmpty(responce.Content))
-            {
-                var result = JsonConvert.DeserializeObject<LinqToSolrResponse>(responce.Content);
-            }
-
-
-            if (LastResponse.Error != null)
-                throw new Exception("Oops! SOLR Says: " + LastResponse.Error.Message);
 
         }
 
         private void PerformDelete<T>(string query, bool softCommit = false)
         {
             var request = PrepareUpdateOrDeleteRequest<T>(null, null, query, softCommit);
-            var responce = Client.Execute(request);
+            FinalizeResponse(request);
 
-            if (responce.StatusCode == HttpStatusCode.OK || responce.StatusCode == HttpStatusCode.NoContent)
-            {
-                LastResponse = new LinqToSolrResponse { LastServiceUri = responce.ResponseUri };
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(responce.Content))
-            {
-                var result = JsonConvert.DeserializeObject<dynamic>(responce.Content);
-            }
-
-            if (LastResponse.Error != null)
-                throw new Exception("Oops! SOLR Says: " + LastResponse.Error.Message);
 
         }
 
@@ -250,6 +222,12 @@ namespace LinqToSolr.Services
         {
 
             var request = PrepareUpdateOrDeleteRequest<T>(null, documentIds, null, softCommit);
+            FinalizeResponse(request);
+        }
+
+
+        private void FinalizeResponse(SolrWebRequest request)
+        {
             var responce = Client.Execute(request);
             if (responce.StatusCode == HttpStatusCode.OK || responce.StatusCode == HttpStatusCode.NoContent)
             {
@@ -259,7 +237,9 @@ namespace LinqToSolr.Services
 
             if (!string.IsNullOrEmpty(responce.Content))
             {
-                var result = JsonConvert.DeserializeObject<dynamic>(responce.Content);
+                LastResponse = JsonConvert.DeserializeObject<LinqToSolrResponse>(responce.Content);
+                LastResponse.LastServiceUri = responce.ResponseUri;
+                LastResponse.Content = responce.Content;
             }
 
             if (LastResponse.Error != null)
@@ -296,7 +276,8 @@ namespace LinqToSolr.Services
                 throw new ArgumentNullException(nameof(query));
 
             var translator = new LinqToSolrQueryTranslator(this, typeof(T));
-            var queryToStr = translator.Translate(query);
+            var q = Evaluator.PartialEval(query);
+            var queryToStr = translator.Translate(BooleanVisitor.Process(q));
             PerformDelete<T>(queryToStr, softCommit);
         }
 
