@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 
 using LinqToSolr.Expressions;
 using LinqToSolr.Services;
+using LinqToSolr.Data;
 
 namespace LinqToSolr.Query
 {
@@ -61,6 +62,7 @@ namespace LinqToSolr.Query
             var qt = new LinqToSolrQueryTranslator(Service);
             expression = Evaluator.PartialEval(expression);
 
+            Service.CurrentQuery = Service.CurrentQuery ?? new LinqToSolrQuery();
             Service.CurrentQuery.FilterUrl = qt.Translate(BooleanVisitor.Process(expression));
 
 
