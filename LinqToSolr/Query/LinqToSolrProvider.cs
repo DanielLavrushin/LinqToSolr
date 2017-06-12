@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Linq;
 using System.Linq.Expressions;
-
+using System.Reflection;
 using LinqToSolr.Expressions;
 using LinqToSolr.Services;
 using LinqToSolr.Data;
@@ -60,8 +60,14 @@ namespace LinqToSolr.Query
             var elementType = TypeSystem.GetElementType(expression.Type);
             Service.ElementType = elementType;
             var qt = new LinqToSolrQueryTranslator(Service);
-            expression = Evaluator.PartialEval(expression, e => e.NodeType != ExpressionType.Parameter &&
-                                                                !typeof(IQueryable).IsAssignableFrom(e.Type));
+
+#if PORTABLE || NETCORE
+            expression = Evaluator.PartialEval(expression, e => e.NodeType != ExpressionType.Parameter && !typeof(IQueryable).GetTypeInfo().IsAssignableFrom(e.Type.GetTypeInfo()));
+            
+#else
+
+            expression = Evaluator.PartialEval(expression, e => e.NodeType != ExpressionType.Parameter && !typeof(IQueryable).IsAssignableFrom(e.Type));
+#endif
 
             Service.CurrentQuery = Service.CurrentQuery ?? new LinqToSolrQuery();
             Service.CurrentQuery.FilterUrl = qt.Translate(BooleanVisitor.Process(expression));
