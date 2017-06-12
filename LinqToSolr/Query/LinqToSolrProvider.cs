@@ -60,7 +60,8 @@ namespace LinqToSolr.Query
             var elementType = TypeSystem.GetElementType(expression.Type);
             Service.ElementType = elementType;
             var qt = new LinqToSolrQueryTranslator(Service);
-            expression = Evaluator.PartialEval(expression);
+            expression = Evaluator.PartialEval(expression, e => e.NodeType != ExpressionType.Parameter &&
+                                                                !typeof(IQueryable).IsAssignableFrom(e.Type));
 
             Service.CurrentQuery = Service.CurrentQuery ?? new LinqToSolrQuery();
             Service.CurrentQuery.FilterUrl = qt.Translate(BooleanVisitor.Process(expression));
