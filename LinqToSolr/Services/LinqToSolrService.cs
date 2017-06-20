@@ -64,7 +64,7 @@ namespace LinqToSolr.Services
         {
 
 
-            string path = string.Format("/solr/{0}/select", index);
+            string path = string.Format("/{1}/{0}/select", index, string.IsNullOrEmpty( Configuration.SolrPath) ? "solr": Configuration.SolrPath);
             var request = new SolrWebRequest(path);
 
 
@@ -166,7 +166,7 @@ namespace LinqToSolr.Services
                        typeof(T).Name));
             }
 
-            string path = string.Format("/solr/{0}/update", index);
+            string path = string.Format("/{1}/{0}/update", index, string.IsNullOrEmpty(Configuration.SolrPath) ? "solr" : Configuration.SolrPath);
             var request = new SolrWebRequest(path, SolrWebMethod.POST);
 
             var updateDocs = JsonConvert.SerializeObject(documentsToUpdate,

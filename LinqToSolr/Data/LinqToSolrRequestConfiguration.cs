@@ -9,6 +9,7 @@ namespace LinqToSolr.Data
         internal static LinqToSolrRequestConfiguration _instance;
         public string SolrLogin { get; set; }
         public string SolrPassword { get; set; }
+        public string SolrPath { get; set; }
         public int Take { get; set; }
         public int Start { get; set; }
         public string EndPoint { get; set; }
