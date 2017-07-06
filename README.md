@@ -23,6 +23,7 @@ LinqToSolr implements IQueriable<> interface, which allows you to call Solr API 
 * Select
 * GroupBy
 * GroupByFacets
+* ExcludeFacetFromQuery
 * Take
 * Skip
 * OrderBy
