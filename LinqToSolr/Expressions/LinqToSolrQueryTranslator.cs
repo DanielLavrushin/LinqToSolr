@@ -67,6 +67,17 @@ namespace LinqToSolr.Expressions
             var fieldName = !string.IsNullOrEmpty(dataMemberAttribute?.PropertyName)
                 ? dataMemberAttribute.PropertyName
                 : member.Name;
+
+            if (_service.CurrentQuery.FacetsToIgnore.Any())
+            {
+                var facetToIgnoreName =
+                    _service.CurrentQuery.FacetsToIgnore.FirstOrDefault(x => x.SolrName == fieldName);
+                if (!string.IsNullOrEmpty(facetToIgnoreName?.SolrName))
+                {
+                    return string.Format("{{!tag={0}}}{1}", facetToIgnoreName.SolrName, fieldName);
+                }
+            }
+
             return fieldName;
 
         }
@@ -163,7 +174,7 @@ namespace LinqToSolr.Expressions
 
             if (m.Method.Name == "Select")
             {
-                _service.CurrentQuery.Select = new SolrSelect(StripQuotes(m.Arguments[1]));
+                _service.CurrentQuery.Select = new LinqSolrSelect(StripQuotes(m.Arguments[1]));
                 Visit(m.Arguments[0]);
 
                 return m;

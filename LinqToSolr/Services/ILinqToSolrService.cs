@@ -18,6 +18,7 @@ namespace LinqToSolr.Services
 
         LinqToSolrQueriable<T> AsQueryable<T>();
 
+        ICollection<T> LastDocuments<T>();
         void AddOrUpdate<T>(T[] document, bool softCommit = false);
         void AddOrUpdate<T>(T document, bool softCommit = false);
         void Delete<T>(object[] documentId, bool softCommit = false);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -51,6 +52,11 @@ namespace LinqToSolr.Services
                 throw new Exception("Solr Endpoint was not provided. Specify Solr server in SolrRequestConfiguration.");
             Client = new SolrWebClient(Configuration.EndPoint);
 
+        }
+
+        public ICollection<T> LastDocuments<T>()
+        {
+            return LastResponse?.Body?.Documents?.Cast<T>().ToList();
         }
 
 
@@ -137,9 +143,12 @@ namespace LinqToSolr.Services
                     request.AddParameter("facet.limit", Configuration.FacetsLimit.ToString());
                 }
 
+                var ignoredFacets = CurrentQuery.FacetsToIgnore.Select(x => x.SolrName).ToList();
                 foreach (var facet in CurrentQuery.Facets)
                 {
-                    request.AddParameter("facet.field", facet.SolrName);
+                    request.AddParameter("facet.field", ignoredFacets.Any(x => x == facet.SolrName)
+                        ? string.Format("{{!ex={0}}}{0}", facet.SolrName)
+                        : facet.SolrName);
                 }
             }
 
@@ -347,7 +356,9 @@ namespace LinqToSolr.Services
                             ? CurrentQuery.Select.Type
                             : elementType);
 
-                    var genList = JsonConvert.DeserializeObject(JsonConvert.SerializeObject(LastResponse.Body.Documents), listMethod, new JsonSerializerSettings { Error = ErrorHandler });
+                    var genList = JsonConvert.DeserializeObject(JsonConvert.SerializeObject(LastResponse.Body.Documents), listMethod, 
+                        new JsonSerializerSettings { Error = ErrorHandler }) as IEnumerable;
+                    LastResponse.Body.Documents = genList.Cast<object>().ToList();
 
 
 
@@ -375,7 +386,7 @@ namespace LinqToSolr.Services
                         var selectMethod = typeof(Enumerable).GetMethods(BindingFlags.Static | BindingFlags.Public).First(m => m.Name == "Select" && m.GetParameters().Count() == 2);
 #endif
                         var fieldList = selectMethod.MakeGenericMethod(elementType, CurrentQuery.Select.Type)
-                            .Invoke(genList, new[] { genList, fieldDelegate });
+                            .Invoke(genList, new object[] { genList, fieldDelegate });
                         CurrentQuery = null;
                         return fieldList;
                     }

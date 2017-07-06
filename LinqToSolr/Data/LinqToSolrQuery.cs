@@ -10,7 +10,7 @@ using LinqToSolr.Expressions;
 
 namespace LinqToSolr.Data
 {
-    public class SolrSelect
+    public class LinqSolrSelect
     {
         public Type Type { get; set; }
         public Expression Expression { get; set; }
@@ -41,7 +41,7 @@ namespace LinqToSolr.Data
 
 
         public bool IsSingleField { get; set; }
-        public SolrSelect(Expression expression)
+        public LinqSolrSelect(Expression expression)
         {
             Expression = expression;
             Type = ((LambdaExpression)Expression).Body.Type;
@@ -163,13 +163,14 @@ namespace LinqToSolr.Data
         internal string FilterUrl { get; set; }
         public ICollection<LinqToSolrFilter> Filters { get; set; }
         public ICollection<LinqToSolrFacet> Facets { get; set; }
+        public ICollection<LinqToSolrFacet> FacetsToIgnore { get; set; }
         public ICollection<LinqToSolrSort> Sortings { get; set; }
 
         public bool IsGroupEnabled { get; set; }
 
         public ICollection<string> GroupFields { get; set; }
         public Type CurrentType { get; set; }
-        public SolrSelect Select { get; set; }
+        public LinqSolrSelect Select { get; set; }
 
         internal ICollection<LinqToSolrJoiner> JoinFields { get; set; }
 
@@ -177,6 +178,7 @@ namespace LinqToSolr.Data
         {
             Filters = new List<LinqToSolrFilter>();
             Facets = new List<LinqToSolrFacet>();
+            FacetsToIgnore = new List<LinqToSolrFacet>();
             Sortings = new List<LinqToSolrSort>();
             GroupFields = new List<string>();
             JoinFields = new List<LinqToSolrJoiner>();

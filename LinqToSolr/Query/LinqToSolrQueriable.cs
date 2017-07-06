@@ -78,6 +78,17 @@ namespace LinqToSolr.Query
             return enumerable;
         }
 
+        public static IQueryable<TSource> ExcludeFacetFromQuery<TSource>(this IQueryable<TSource> enumerable,
+            Expression<Func<TSource, object>> expression)
+        {
+            var query = enumerable as LinqToSolrQueriable<TSource>;
+            var service = ((LinqToSolrProvider)query.Provider).Service;
+            service.CurrentQuery = service.CurrentQuery ?? new LinqToSolrQuery();
+            service.CurrentQuery.FacetsToIgnore.Add(LinqToSolrFacet.Create(expression));
+
+            return enumerable;
+        }
+
 #if NETSTANDARD1_6
         public static IEnumerable<IGrouping<string, TKey>> GroupByFacets<TSource, TKey>(this IEnumerable<TSource> enumerable, params Expression<Func<TSource, TKey>>[] expression)
 #else
