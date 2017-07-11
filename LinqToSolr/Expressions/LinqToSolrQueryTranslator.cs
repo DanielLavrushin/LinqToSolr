@@ -31,6 +31,7 @@ namespace LinqToSolr.Expressions
         private bool _inRangeEqualQuery;
         private ILinqToSolrService _service;
         private bool _isRedudant;
+        private bool _isNotEqual;
         private ICollection<string> _sortings;
         private Type _elementType;
         internal bool IsMultiList;
@@ -288,7 +289,7 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
         protected override Expression VisitBinary(BinaryExpression b)
         {
             _isRedudant = false;
-            sb.Append("(");
+           sb.Append("(");
 
             if (b.Left is ConstantExpression)
             {
@@ -299,7 +300,18 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
                     "Failed to parse expression. Ensure the Solr fields are always come in the left part of comparison.");
 #endif
             }
+            if (b.NodeType == ExpressionType.NotEqual)
+            {
+                _isNotEqual = true;
+            }
             Visit(b.Left);
+
+            if (_isNotEqual && b.Left.NodeType == ExpressionType.Call)
+            {
+                _isNotEqual = false;
+                sb.Append(")");
+                return b;
+            }
 
             switch (b.NodeType)
             {
@@ -317,7 +329,7 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
                     sb.Append(":");
                     break;
                 case ExpressionType.NotEqual:
-                    sb.Append(":=");
+                    sb.Append(":");
                     break;
                 case ExpressionType.GreaterThanOrEqual:
                     sb.Append(":[");
@@ -344,20 +356,7 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
 
             Visit(b.Right);
 
-
-            if (b.NodeType != ExpressionType.Equal &&
-                b.NodeType != ExpressionType.NotEqual &&
-                b.Right is MemberExpression &&
-                (b.Left is BinaryExpression || b.Left.NodeType == ExpressionType.Call))
-            {
-                if (((MemberExpression)b.Right).Type == typeof(bool))
-                {
-                    sb.Append(":");
-                    sb.Append(" True");
-                }
-            }
-
-            sb.Append(")");
+           sb.Append(")");
 
             return b;
         }
@@ -461,7 +460,7 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
             {
 
                 var fieldName = GetFieldName(m.Member);
-                sb.Append(fieldName);
+                sb.Append(_isNotEqual ? string.Format("-{0}", fieldName) : fieldName);
                 return m;
             }
             if (m.Expression != null)

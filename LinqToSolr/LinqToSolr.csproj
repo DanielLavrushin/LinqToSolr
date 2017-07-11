@@ -3,8 +3,8 @@
     <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net45;net452;net40;net35;net461;netcoreapp1.1;netcoreapp1.0;netstandard1.6;netstandard2.0;portable-net45+win8+wpa81+wp8;portable-net40+win8+wpa81+wp8+sl5</TargetFrameworks>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <RuntimeIdentifiers>win7-x64</RuntimeIdentifiers>
-    <AssemblyVersion>2.1.1.0</AssemblyVersion>
-    <FileVersion>2.1.1.0</FileVersion>
+    <AssemblyVersion>2.1.1.1</AssemblyVersion>
+    <FileVersion>2.1.1.1</FileVersion>
     <VersionPrefix>2.1.0.2</VersionPrefix>
     <VersionSuffix>alfa</VersionSuffix>
     <Authors>Daniel Lavrushin</Authors>
@@ -28,8 +28,7 @@
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Version>2.1.1.0</Version>
-    <PackageReleaseNotes>- add tag/ex feature for Tagging and excluding Filters. Use a new IQueriable method to tell the service to ignore facets in query (ExcludeFacetFromQuery)
-- minor fix to return generic object when calling GroupByFacets (use a new  solr.LastDocuments() method to get a documents list from last response)</PackageReleaseNotes>
+    <PackageReleaseNotes>- Fixed NotEqual condition</PackageReleaseNotes>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)'=='net461'">
     <AssemblyTitle>LinqToSolr</AssemblyTitle>
