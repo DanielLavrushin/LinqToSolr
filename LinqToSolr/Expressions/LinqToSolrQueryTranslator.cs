@@ -424,16 +424,16 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
             }
             else
             {
-                if (val.ToString().Contains(" ") && !val.ToString().Contains("*"))
+                if (val is string)
                 {
+
                     if (IsMultiList)
                     {
                         sb.Append(string.Format("({0})", val));
                     }
                     else
                     {
-
-                        sb.Append(string.Format("\"{0}\"", val));
+                        sb.Append(val.ToString().Replace(" ", "\\ "));
                     }
 
                 }

@@ -27,7 +27,7 @@
     <MinClientVersion>2.12</MinClientVersion>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>2.1.1.0</Version>
+    <Version>2.1.1.1</Version>
     <PackageReleaseNotes>- Fixed NotEqual condition</PackageReleaseNotes>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)'=='net461'">

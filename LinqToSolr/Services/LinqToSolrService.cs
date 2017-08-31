@@ -341,8 +341,8 @@ namespace LinqToSolr.Services
                 throw response.ErrorException;
             }
 
-
-            LastResponse = JsonConvert.DeserializeObject<LinqToSolrResponse>(response.Content);
+            LastResponse = JsonConvert.DeserializeObject<LinqToSolrResponse>(response.Content, new LinqToSolrRawJsonConverter());
+           
             LastResponse.LastServiceUri = response.ResponseUri;
             if (LastResponse.Header.Status == 0)
             {
@@ -357,7 +357,7 @@ namespace LinqToSolr.Services
                             : elementType);
 
                     var genList = JsonConvert.DeserializeObject(JsonConvert.SerializeObject(LastResponse.Body.Documents), listMethod, 
-                        new JsonSerializerSettings { Error = ErrorHandler }) as IEnumerable;
+                        new JsonSerializerSettings { Error = ErrorHandler, Converters = new List<JsonConverter>{ new LinqToSolrRawJsonConverter() } }) as IEnumerable;
                     LastResponse.Body.Documents = genList.Cast<object>().ToList();
 
 
