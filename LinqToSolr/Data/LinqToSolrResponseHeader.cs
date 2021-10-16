@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using LinqToSolr.Helpers.Json;
 
 namespace LinqToSolr.Data
 {

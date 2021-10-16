@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+
 using LinqToSolr.Data;
 using LinqToSolr.Query;
 
@@ -13,11 +14,8 @@ namespace LinqToSolr.Services
         LinqToSolrRequestConfiguration Configuration { get; set; }
         object Query(Type type, LinqToSolrQuery query = null);
         ICollection<T> Query<T>(LinqToSolrQuery query = null);
-
         LinqToSolrQuery CurrentQuery { get; set; }
-
         LinqToSolrQueriable<T> AsQueryable<T>();
-
         ICollection<T> LastDocuments<T>();
         void AddOrUpdate<T>(T[] document, bool softCommit = false);
         void AddOrUpdate<T>(T document, bool softCommit = false);

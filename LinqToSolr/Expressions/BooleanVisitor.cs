@@ -2,11 +2,7 @@
 
 namespace LinqToSolr.Expressions
 {
-#if NET35
-     internal class BooleanVisitor: LinqToSolr.Expressions.ExpressionVisitorNet35
-#else
-    internal class BooleanVisitor: ExpressionVisitor
-#endif
+    internal class BooleanVisitor : ExpressionVisitor
     {
         public static Expression Process(Expression expression)
         {

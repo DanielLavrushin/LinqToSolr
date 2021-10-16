@@ -4,18 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using LinqToSolr.Data;
-using LinqToSolr.Services;
-using Newtonsoft.Json;
-using System.ComponentModel;
-using System.Globalization;
-using System.Security;
-
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters;
-using Newtonsoft.Json.Utilities;
-using Newtonsoft.Json.Serialization;
 
 
 namespace LinqToSolr.Expressions
@@ -29,7 +17,7 @@ namespace LinqToSolr.Expressions
             Type ienum = FindIEnumerable(seqType);
 
             if (ienum == null) return seqType;
-#if PORTABLE || NETCORE
+#if NETSTANDARD
             return ienum.GetTypeInfo().IsGenericTypeDefinition
                 ? ienum.GetTypeInfo().GenericTypeParameters[0]
                 : ienum.GetTypeInfo().GenericTypeArguments[0];
@@ -49,7 +37,7 @@ namespace LinqToSolr.Expressions
 
                 return typeof(IEnumerable<>).MakeGenericType(seqType.GetElementType());
 
-#if PORTABLE || NETCORE
+#if NETSTANDARD
             if (seqType.GetTypeInfo().IsGenericType)
             {
 #else
@@ -59,8 +47,8 @@ namespace LinqToSolr.Expressions
 
 
 
-#if PORTABLE || NETCORE
-                var args =seqType.GetTypeInfo().IsGenericTypeDefinition
+#if NETSTANDARD
+                var args = seqType.GetTypeInfo().IsGenericTypeDefinition
                     ? seqType.GetTypeInfo().GenericTypeParameters
                     : seqType.GetTypeInfo().GenericTypeArguments;
                 foreach (Type arg in args)
@@ -72,7 +60,7 @@ namespace LinqToSolr.Expressions
                 {
 
                     Type ienum = typeof(IEnumerable<>).MakeGenericType(arg);
-#if PORTABLE || NETCORE
+#if NETSTANDARD
                     if (ienum.GetTypeInfo().IsAssignableFrom(seqType.GetTypeInfo()))
 #else
                     if (ienum.IsAssignableFrom(seqType))
@@ -85,7 +73,7 @@ namespace LinqToSolr.Expressions
                 }
 
             }
-#if PORTABLE || NETCORE
+#if NETSTANDARD
             Type[] ifaces = seqType.GetTypeInfo().ImplementedInterfaces.ToArray();
 #else
             Type[] ifaces = seqType.GetInterfaces();
@@ -105,7 +93,7 @@ namespace LinqToSolr.Expressions
 
             }
 
-#if PORTABLE || NETCORE
+#if NETSTANDARD
             if (seqType.GetTypeInfo().BaseType != null && seqType.GetTypeInfo().BaseType != typeof(object))
             {
                 return FindIEnumerable(seqType.GetTypeInfo().BaseType);

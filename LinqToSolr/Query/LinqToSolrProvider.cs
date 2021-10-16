@@ -9,7 +9,7 @@ using LinqToSolr.Data;
 
 namespace LinqToSolr.Query
 {
-    public class LinqToSolrProvider: IQueryProvider
+    public class LinqToSolrProvider : IQueryProvider
     {
         internal Type ElementType;
         internal ILinqToSolrService Service;
@@ -61,7 +61,7 @@ namespace LinqToSolr.Query
             Service.ElementType = elementType;
             var qt = new LinqToSolrQueryTranslator(Service);
 
-#if PORTABLE || NETCORE
+#if NETSTANDARD
             expression = Evaluator.PartialEval(expression, e => e.NodeType != ExpressionType.Parameter && !typeof(IQueryable).GetTypeInfo().IsAssignableFrom(e.Type.GetTypeInfo()));
             
 #else

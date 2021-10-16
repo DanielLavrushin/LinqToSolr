@@ -5,34 +5,20 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using LinqToSolr.Data;
-using LinqToSolr.Services;
-using Newtonsoft.Json;
-using System.ComponentModel;
-using System.Globalization;
-using System.Security;
 
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters;
-using Newtonsoft.Json.Utilities;
-using Newtonsoft.Json.Serialization;
+using LinqToSolr.Data;
+using LinqToSolr.Helpers.Json;
+using LinqToSolr.Services;
 
 namespace LinqToSolr.Expressions
 {
-
-#if NET35
-    internal class LinqToSolrQueryTranslator: LinqToSolr.Expressions.ExpressionVisitorNet35
-#else
-    internal class LinqToSolrQueryTranslator: System.Linq.Expressions.ExpressionVisitor
-#endif
+    internal class LinqToSolrQueryTranslator : ExpressionVisitor
     {
         private StringBuilder sb;
         private bool _inRangeQuery;
         private bool _inRangeEqualQuery;
         private ILinqToSolrService _service;
-        private bool _isRedudant;
         private bool _isNotEqual;
-        private ICollection<string> _sortings;
         private Type _elementType;
         internal bool IsMultiList;
 
@@ -40,29 +26,23 @@ namespace LinqToSolr.Expressions
         {
             _service = query;
             _elementType = GetElementType(_service.ElementType);
-            _sortings = new List<string>();
         }
 
         internal LinqToSolrQueryTranslator(ILinqToSolrService query, Type elementType)
         {
             _service = query;
             _elementType = GetElementType(elementType);
-            _sortings = new List<string>();
             _elementType = elementType;
         }
 
         internal string GetFieldName(MemberInfo member)
         {
 
-
-#if NET40 || NET35 || PORTABLE40
-            var dataMemberAttribute =
-                Attribute.GetCustomAttribute(member, typeof(JsonPropertyAttribute), true) as
-                    JsonPropertyAttribute;
-
+#if NET45_OR_GREATER
+                var dataMemberAttribute = member.GetCustomAttribute<JsonPropertyAttribute>();
 #else
+            var dataMemberAttribute = member.GetCustomAttributes(typeof(JsonPropertyAttribute), true).FirstOrDefault() as JsonPropertyAttribute;
 
-            var dataMemberAttribute = member.GetCustomAttribute<JsonPropertyAttribute>();
 #endif
 
             var fieldName = !string.IsNullOrEmpty(dataMemberAttribute?.PropertyName)
@@ -90,9 +70,9 @@ namespace LinqToSolr.Expressions
 
             if (type.Name == "IGrouping`2")
             {
-#if PORTABLE || NETCORE
-                return type.GetTypeInfo().IsGenericTypeDefinition 
-    ? type.GetTypeInfo().GenericTypeParameters[1] 
+#if NETSTANDARD
+                return type.GetTypeInfo().IsGenericTypeDefinition
+    ? type.GetTypeInfo().GenericTypeParameters[1]
     : type.GetTypeInfo().GenericTypeArguments[1];
 #else
                 return type.GetGenericArguments()[1];
@@ -103,7 +83,6 @@ namespace LinqToSolr.Expressions
 
         internal string Translate(Expression expression)
         {
-            _isRedudant = true;
             sb = new StringBuilder();
             Visit(expression);
             return sb.ToString();
@@ -246,7 +225,7 @@ namespace LinqToSolr.Expressions
 
                 _service.CurrentQuery.IsGroupEnabled = true;
                 var arr = StripQuotes(m.Arguments[1]);
-#if PORTABLE || NETCORE
+#if NETSTANDARD
                 var solrQueryTranslator =
 new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)arr).Body).Member.DeclaringType);
 #else
@@ -288,16 +267,14 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
 
         protected override Expression VisitBinary(BinaryExpression b)
         {
-            _isRedudant = false;
-           sb.Append("(");
+            sb.Append("(");
 
             if (b.Left is ConstantExpression)
             {
-#if NETCORE || PORTABLE40 || PORTABLE
+#if NETSTANDARD
                 throw new Exception("Failed to parse expression. Ensure the Solr fields are always come in the left part of comparison.");
 #else
-                throw new System.Data.InvalidExpressionException(
-                    "Failed to parse expression. Ensure the Solr fields are always come in the left part of comparison.");
+                throw new System.Data.InvalidExpressionException("Failed to parse expression. Ensure the Solr fields are always come in the left part of comparison.");
 #endif
             }
             if (b.NodeType == ExpressionType.NotEqual)
@@ -356,7 +333,7 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
 
             Visit(b.Right);
 
-           sb.Append(")");
+            sb.Append(")");
 
             return b;
         }
@@ -399,12 +376,8 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
 
         private void AppendConstValue(object val)
         {
-
-
-#if PORTABLE40
-            var isArray = val.GetType().IsAssignableFrom(typeof(IEnumerable));
-#elif PORTABLE || NETCORE
-                var isArray = val.GetType().GetTypeInfo().IsArray;
+#if NETSTANDARD
+            var isArray = val.GetType().GetTypeInfo().IsArray;
 #else
             var isArray = val.GetType().GetInterface("IEnumerable`1") != null;
 #endif

@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using Newtonsoft.Json;
 using System.Reflection;
+
+using LinqToSolr.Helpers.Json;
 
 namespace LinqToSolr.Data
 {
@@ -51,7 +52,7 @@ namespace LinqToSolr.Data
             //do not use this - not ready
             var obj = Activator.CreateInstance<T>();
 
-#if PORTABLE || NETSTANDARD1_6 || NETSTANDARD2_0
+#if NETSTANDARD
             var props = obj.GetType().GetRuntimeProperties();
 #else
             var props = obj.GetType().GetProperties();

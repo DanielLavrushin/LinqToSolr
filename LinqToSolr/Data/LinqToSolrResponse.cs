@@ -1,9 +1,10 @@
 ﻿using System;
-using Newtonsoft.Json;
+
+using LinqToSolr.Helpers.Json;
 
 namespace LinqToSolr.Data
 {
-    public class LinqToSolrResponse: ILinqToSolrResponse
+    public class LinqToSolrResponse<T> : ILinqToSolrResponse<T>
     {
         public int FoundDocuments { get; set; }
         public Uri LastServiceUri { get; set; }
@@ -13,7 +14,7 @@ namespace LinqToSolr.Data
         public LinqToSolrResponseHeader Header { get; set; }
 
         [JsonProperty("response")]
-        public LinqToSolrResponseBody Body { get; set; }
+        public LinqToSolrResponseBody<T> Body { get; set; }
 
         [JsonProperty("error")]
         public LinqToSolrResponseError Error { get; set; }

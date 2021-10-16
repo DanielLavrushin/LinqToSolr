@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using LinqToSolr.Services;
-using LinqToSolr.Data;
 
-#if DNXCORE50
-using Xunit;
-using Test = Xunit.FactAttribute;
-using Assert = LinqToSolr.Tests.XUnitAssert;
-#else
+using LinqToSolr.Data;
+using LinqToSolr.Services;
+
 using NUnit.Framework;
-#endif
 
 
 namespace LinqToSolr.Tests
@@ -30,7 +25,7 @@ namespace LinqToSolr.Tests
         [OneTimeSetUp]
         public void Init()
         {
-            var config = new LinqToSolrRequestConfiguration("http://localhost:8983/")
+            var config = new LinqToSolrRequestConfiguration("https://localhost:9193/")
                 .MapIndexFor<TestCoreDoc>("testcore");
             _solr = new LinqToSolrService(config);
         }

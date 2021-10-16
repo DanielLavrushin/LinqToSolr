@@ -5,12 +5,11 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
-using LinqToSolr.Converters;
+
 using LinqToSolr.Data;
 using LinqToSolr.Expressions;
 using LinqToSolr.Query;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using LinqToSolr.Helpers.Json;
 
 namespace LinqToSolr.Services
 {
@@ -18,7 +17,7 @@ namespace LinqToSolr.Services
     {
 
     }
-    public class LinqToSolrService: ILinqToSolrService
+    public class LinqToSolrService : ILinqToSolrService
     {
         public LinqToSolrRequestConfiguration Configuration { get; set; }
         public ILinqToSolrResponse LastResponse { get; set; }
@@ -70,7 +69,7 @@ namespace LinqToSolr.Services
         {
 
 
-            string path = string.Format("/{1}/{0}/select", index, string.IsNullOrEmpty( Configuration.SolrPath) ? "solr": Configuration.SolrPath);
+            string path = string.Format("/{1}/{0}/select", index, string.IsNullOrEmpty(Configuration.SolrPath) ? "solr" : Configuration.SolrPath);
             var request = new SolrWebRequest(path);
 
 
@@ -178,13 +177,8 @@ namespace LinqToSolr.Services
             string path = string.Format("/{1}/{0}/update", index, string.IsNullOrEmpty(Configuration.SolrPath) ? "solr" : Configuration.SolrPath);
             var request = new SolrWebRequest(path, SolrWebMethod.POST);
 
-            var updateDocs = JsonConvert.SerializeObject(documentsToUpdate,
-                Newtonsoft.Json.Formatting.None,
-                new JsonSerializerSettings
-                {
-                    NullValueHandling = NullValueHandling.Ignore
-                });
 
+            var updateDocs = documentsToUpdate.ToJson();
             request.AddParameter("wt", "json");
             request.AddParameter("commit", "true");
             if (softCommit)
@@ -198,11 +192,11 @@ namespace LinqToSolr.Services
             }
             else if (deleteDocIds != null && deleteDocIds.Any())
             {
-                request.Body = JsonConvert.SerializeObject(new { delete = deleteDocIds });
+                request.Body = new { delete = deleteDocIds }.ToJson();
             }
             else if (!string.IsNullOrEmpty(deleteByQuery))
             {
-                request.Body = JsonConvert.SerializeObject(new { delete = new { query = deleteByQuery } });
+                request.Body = new { delete = new { query = deleteByQuery } }.ToJson();
             }
 
 
@@ -246,7 +240,7 @@ namespace LinqToSolr.Services
 
             if (!string.IsNullOrEmpty(responce.Content))
             {
-                LastResponse = JsonConvert.DeserializeObject<LinqToSolrResponse>(responce.Content);
+                LastResponse = responce.Content.FromJson<LinqToSolrResponse>();
                 LastResponse.LastServiceUri = responce.ResponseUri;
                 LastResponse.Content = responce.Content;
             }
@@ -295,10 +289,7 @@ namespace LinqToSolr.Services
             return Query(typeof(T), query) as ICollection<T>;
         }
 
-        private void ErrorHandler(object sender, Newtonsoft.Json.Serialization.ErrorEventArgs errorEventArgs)
-        {
-            errorEventArgs.ErrorContext.Handled = true;
-        }
+
 
         public object Query(Type elementType, LinqToSolrQuery query = null)
         {
@@ -341,9 +332,9 @@ namespace LinqToSolr.Services
                 throw response.ErrorException;
             }
 
-            LastResponse = JsonConvert.DeserializeObject<LinqToSolrResponse>(response.Content, new LinqToSolrRawJsonConverter());
-           
+            LastResponse = response.Content.FromJson<LinqToSolrResponse>();
             LastResponse.LastServiceUri = response.ResponseUri;
+
             if (LastResponse.Header.Status == 0)
             {
                 if (LastResponse.Body != null)
@@ -351,27 +342,22 @@ namespace LinqToSolr.Services
 
                     LastResponse.FoundDocuments = (int)LastResponse.Body?.Count;
 
-                    var listMethod =
-                        typeof(List<>).MakeGenericType(CurrentQuery.Select != null && !CurrentQuery.Select.IsSingleField
-                            ? CurrentQuery.Select.Type
-                            : elementType);
+                    var listMethod = typeof(List<>).MakeGenericType(CurrentQuery.Select != null && !CurrentQuery.Select.IsSingleField ? CurrentQuery.Select.Type : elementType);
 
-                    var genList = JsonConvert.DeserializeObject(JsonConvert.SerializeObject(LastResponse.Body.Documents), listMethod, 
-                        new JsonSerializerSettings { Error = ErrorHandler, Converters = new List<JsonConverter>{ new LinqToSolrRawJsonConverter() } }) as IEnumerable;
+                    var genList = LastResponse.Body.Documents.ToJson().FromJson(listMethod) as IEnumerable;
+
                     LastResponse.Body.Documents = genList.Cast<object>().ToList();
-
-
 
                     if (LastResponse.Facets != null)
                     {
 
                         foreach (var facet in CurrentQuery.Facets)
                         {
-                            var content = JsonConvert.DeserializeObject<JObject>(response.Content)["facet_counts"];
-                            var groups = content["facet_fields"][facet.SolrName] as JArray;
+                            //var content = response.Content.FromJson<LinqToSolrFacetsResponse>();
+                            //var groups = content["facet_fields"][facet.SolrName] as JArray;
 
-                            LastResponse.Facets.Add(facet.SolrName,
-                                groups.Where((x, i) => i % 2 == 0).Select(x => ((JValue)x).Value).ToArray());
+                            //LastResponse.Facets.Add(facet.SolrName,
+                            //    groups.Where((x, i) => i % 2 == 0).Select(x => ((JValue)x).Value).ToArray());
                         }
                     }
 
@@ -379,8 +365,7 @@ namespace LinqToSolr.Services
                     {
                         var fieldDelegate = ((LambdaExpression)CurrentQuery.Select.Expression).Compile();
 
-#if PORTABLE || NETCORE
-                        
+#if NETSTANDARD
                         var selectMethod = typeof(Enumerable).GetRuntimeMethods().First(m => m.Name == "Select" && m.GetParameters().Count() == 2);
 #else
                         var selectMethod = typeof(Enumerable).GetMethods(BindingFlags.Static | BindingFlags.Public).First(m => m.Name == "Select" && m.GetParameters().Count() == 2);
@@ -398,8 +383,8 @@ namespace LinqToSolr.Services
 
                 if (CurrentQuery.IsGroupEnabled)
                 {
-#if PORTABLE || NETCORE
-                    var args =ElementType.GetTypeInfo().IsGenericTypeDefinition
+#if NETSTANDARD
+                    var args = ElementType.GetTypeInfo().IsGenericTypeDefinition
                         ? ElementType.GetTypeInfo().GenericTypeParameters
                         : ElementType.GetTypeInfo().GenericTypeArguments;
                     var _keyType = args[0];
@@ -411,11 +396,10 @@ namespace LinqToSolr.Services
 
 #endif
 
-                    var solrConverterType = typeof(LinqToSolrGroupingResponseConverter<,>).MakeGenericType(_keyType, _valueType);
+                    var solrConverterType = typeof(KeyValuePair<,>).MakeGenericType(_keyType, _valueType);
                     var converterInstance = Activator.CreateInstance(solrConverterType);
 
-                    var groupResult = JsonConvert.DeserializeObject(response.Content, solrConverterType,
-                      converterInstance as JsonConverter);
+                    var groupResult = response.Content.FromJson(solrConverterType);
                     return groupResult;
                 }
 

@@ -1,16 +1,17 @@
-﻿using System;
+﻿#if NET35
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 
-namespace LinqToSolr.Expressions
+
+namespace System.Linq.Expressions
 {
-    public abstract class ExpressionVisitorNet35
+
+    public abstract class ExpressionVisitor
     {
 
-        protected ExpressionVisitorNet35()
+        protected ExpressionVisitor()
         {
 
         }
@@ -146,8 +147,8 @@ namespace LinqToSolr.Expressions
                 default:
 
                     throw new Exception(string.Format("Unhandled expression type: ‘{ 0 }'", exp.NodeType));
-    
-        }
+
+            }
 
         }
 
@@ -174,8 +175,8 @@ namespace LinqToSolr.Expressions
                 default:
 
                     throw new Exception(string.Format("Unhandled binding type ‘{ 0 }'", binding.BindingType));
-    
-        }
+
+            }
 
         }
 
@@ -667,3 +668,4 @@ namespace LinqToSolr.Expressions
 
     }
 }
+#endif

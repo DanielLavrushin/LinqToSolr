@@ -2,10 +2,6 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
-#if NET35
-using LinqToSolr.Expressions;
-#endif
-
 
 namespace LinqToSolr.Expressions
 {
@@ -27,11 +23,8 @@ namespace LinqToSolr.Expressions
             return expression.NodeType != ExpressionType.Parameter;
         }
 
-#if NET35
-        internal class SubtreeEvaluator: ExpressionVisitorNet35
-#else
-        internal class SubtreeEvaluator: ExpressionVisitor
-#endif
+
+        internal class SubtreeEvaluator : ExpressionVisitor
         {
 
             HashSet<Expression> candidates;
@@ -87,12 +80,8 @@ namespace LinqToSolr.Expressions
 
 
 
-#if NET35
-        class Nominator: ExpressionVisitorNet35
-#else
-        class Nominator: ExpressionVisitor
+        class Nominator : ExpressionVisitor
 
-#endif
         {
             readonly Func<Expression, bool> _fnCanBeEvaluated;
 

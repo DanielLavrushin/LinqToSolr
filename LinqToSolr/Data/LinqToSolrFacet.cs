@@ -1,11 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using Newtonsoft.Json;
+
+using LinqToSolr.Helpers.Json;
 
 namespace LinqToSolr.Data
 {
+    public class LinqToSolrFacetsResponse
+    {
+    }
     public class LinqToSolrFacet
     {
         public string SolrName { get; set; }
@@ -20,9 +25,7 @@ namespace LinqToSolr.Data
             if (fb != null)
             {
 #if NET40 || NET35 || PORTABLE40
-                var dataMemberAttribute =
-                    Attribute.GetCustomAttribute(fb.Member, typeof(JsonPropertyAttribute), true) as
-                        JsonPropertyAttribute;
+                var dataMemberAttribute = Attribute.GetCustomAttribute(fb.Member, typeof(JsonPropertyAttribute), true) as JsonPropertyAttribute;
 #else
 
                 var dataMemberAttribute = fb.Member.GetCustomAttribute<JsonPropertyAttribute>();

@@ -19,8 +19,7 @@ namespace LinqToSolr.Data
         {
             Field = field;
             ObjectType = objectType;
-#if PORTABLE || NETSTANDARD1_6 || NETSTANDARD2_0
-
+#if NETSTANDARD
             FieldProperty = objectType.GetRuntimeProperty(field);
 #else
             FieldProperty = objectType.GetProperty(field);
@@ -35,7 +34,7 @@ namespace LinqToSolr.Data
         {
             Field = member.Name;
             ObjectType = member.DeclaringType;
-#if PORTABLE || NETSTANDARD1_6 || NETSTANDARD2_0
+#if NETSTANDARD
 
             FieldProperty = ObjectType.GetRuntimeProperty(Field);
 #else
@@ -51,8 +50,8 @@ namespace LinqToSolr.Data
         public Type GetRealPropertyType()
         {
 
-#if PORTABLE || NETCORE
-            var isGenericArray =  FieldProperty.PropertyType.IsArray && FieldProperty.PropertyType.GetTypeInfo().IsGenericTypeDefinition;
+#if NETSTANDARD
+            var isGenericArray = FieldProperty.PropertyType.IsArray && FieldProperty.PropertyType.GetTypeInfo().IsGenericTypeDefinition;
             return isGenericArray ? FieldProperty.PropertyType.GetTypeInfo().GenericTypeParameters[0] : FieldProperty.PropertyType;
 #else
             var isGenericArray = FieldProperty.PropertyType.IsArray && FieldProperty.PropertyType.IsGenericType;
@@ -73,7 +72,7 @@ namespace LinqToSolr.Data
 
         public string GetFieldKey()
         {
-#if PORTABLE || NETSTANDARD1_6 || NETSTANDARD2_0
+#if NETSTANDARD
             var props = PropertyRealType.GetRuntimeProperties().ToList();
 #else
             var props = PropertyRealType.GetProperties().ToList();
@@ -90,6 +89,6 @@ namespace LinqToSolr.Data
             return null;
         }
 
-     
+
     }
 }
