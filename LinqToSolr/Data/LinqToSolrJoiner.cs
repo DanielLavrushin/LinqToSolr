@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
+using LinqToSolr.Interfaces;
+
 namespace LinqToSolr.Data
 {
-    public class LinqToSolrJoiner
+    public class LinqToSolrJoiner : ILinqToSolrJoiner
     {
         public string Field { get; set; }
         public string ForeignKey { get; set; }
@@ -57,11 +59,6 @@ namespace LinqToSolr.Data
             var isGenericArray = FieldProperty.PropertyType.IsArray && FieldProperty.PropertyType.IsGenericType;
             return isGenericArray ? FieldProperty.PropertyType.GetGenericArguments()[0] : FieldProperty.PropertyType;
 #endif
-
-
-
-
-
 
         }
         public string GetForeignKey()

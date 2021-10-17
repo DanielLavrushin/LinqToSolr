@@ -7,13 +7,13 @@ namespace LinqToSolr.Data
 {
     public class LinqToSolrResponseBody<T>
     {
-        [JsonProperty("numFound")]
+        [SolrField("numFound")]
         public int Count { get; set; }
 
-        [JsonProperty("start")]
+        [SolrField("start")]
         public int Start { get; set; }
 
-        [JsonProperty("docs")]
+        [SolrField("docs")]
         public ICollection<T> Documents { get; set; }
 
         public object GetList(Type elementType)

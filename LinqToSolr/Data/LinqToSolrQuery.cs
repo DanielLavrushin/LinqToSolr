@@ -5,6 +5,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 
 using LinqToSolr.Helpers.Json;
+using LinqToSolr.Interfaces;
+using LinqToSolr.Query;
 
 #if NET35
 using LinqToSolr.Expressions;
@@ -12,211 +14,37 @@ using LinqToSolr.Expressions;
 
 namespace LinqToSolr.Data
 {
-    public class LinqSolrSelect
+    public class LinqToSolrQuery : ILinqToSolrQuery
     {
-        public Type Type { get; set; }
-        public Expression Expression { get; set; }
-
-        static readonly Type[] PredefinedTypes = {
-            typeof(Object),
-            typeof(Boolean),
-            typeof(Char),
-            typeof(String),
-            typeof(SByte),
-            typeof(Byte),
-            typeof(Int16),
-            typeof(UInt16),
-            typeof(Int32),
-            typeof(UInt32),
-            typeof(Int64),
-            typeof(UInt64),
-            typeof(Single),
-            typeof(Double),
-            typeof(Decimal),
-            typeof(DateTime),
-            typeof(TimeSpan),
-            typeof(Guid),
-            typeof(Guid?),
-            typeof(Math),
-            typeof(Convert)
-        };
-
-
-        public bool IsSingleField { get; set; }
-        public LinqSolrSelect(Expression expression)
-        {
-            Expression = expression;
-            Type = ((LambdaExpression)Expression).Body.Type;
-
-        }
-        public void CreateProxyType(Type baseType)
-        {
-#if NETSTANDARD
-            foreach (var p in baseType.GetRuntimeProperties())
-#else
-            foreach (var p in baseType.GetProperties())
-#endif
-            {
-#if NET45_OR_GREATER
-                var dataMemberAttribute = p.GetCustomAttribute<JsonPropertyAttribute>();
-#else
-                var dataMemberAttribute = p.GetCustomAttributes(typeof(JsonPropertyAttribute), true).FirstOrDefault() as JsonPropertyAttribute;
-
-#endif
-                if (dataMemberAttribute != null)
-                {
-                    //    TypeDescriptor.AddAttributes(Type, attr);
-                }
-            }
-
-
-
-        }
-
-        public string GetSelectFields()
-        {
-            var str = "*";
-
-            if (Expression != null)
-            {
-                str = GetAllMembersVisitor.GetMemberNames(((LambdaExpression)Expression).Body);
-            }
-            IsSingleField = !str.Contains(",") && PredefinedTypes.Contains(Type);
-            return str;
-        }
-
-
-        internal class GetAllMembersVisitor : ExpressionVisitor
-        {
-
-            internal ICollection<string> Members;
-            internal GetAllMembersVisitor()
-            {
-                Members = new List<string>();
-            }
-
-#if NET35
-            protected override Expression VisitMemberAccess(MemberExpression node)
-#else
-            protected override Expression VisitMember(MemberExpression node)
-#endif
-            {
-                Members.Add(GetName(node.Member));
-#if NET35
-                return node;
-#else
-                return base.VisitMember(node);
-#endif
-            }
-
-#if NET35
-            protected override Expression VisitBinary(BinaryExpression node)
-#else
-            protected override Expression VisitBinary(BinaryExpression node)
-#endif
-            {
-
-                Visit(node.Left);
-                Visit(node.Right);
-#if NET35
-                return node;
-#else
-                return base.VisitBinary(node);
-#endif
-            }
-
-
-            internal static string GetName(MemberInfo member)
-            {
-                var prop = member;
-#if NET45_OR_GREATER
-                var dataMemberAttribute = prop.GetCustomAttribute<JsonPropertyAttribute>();
-#else
-                var dataMemberAttribute = prop.GetCustomAttributes(typeof(JsonPropertyAttribute), true).FirstOrDefault() as JsonPropertyAttribute;
-
-#endif
-                return $"{prop.Name}:{(!string.IsNullOrEmpty(dataMemberAttribute?.PropertyName) ? dataMemberAttribute.PropertyName : prop.Name)}";
-            }
-
-            public static string GetMemberNames(Expression expression)
-            {
-                var gm = new GetAllMembersVisitor();
-                gm.Visit(expression);
-
-                return string.Join(",", gm.Members.ToArray());
-            }
-
-        }
-    }
-
-    public class LinqToSolrQuery
-    {
-        public string Index { get; set; }
-        internal string FilterUrl { get; set; }
-        public ICollection<LinqToSolrFilter> Filters { get; set; }
-        public ICollection<LinqToSolrFacet> Facets { get; set; }
-        public ICollection<LinqToSolrFacet> FacetsToIgnore { get; set; }
-        public ICollection<LinqToSolrSort> Sortings { get; set; }
-
+        public ILinqToSolrProvider Provider { get; }
+        public Expression Expression { get { return Query.Expression; } }
+        public ICollection<ILinqToSolrFilter> Filters { get; }
+        public ICollection<ILinqToSolrFacet> Facets { get; }
+        public ICollection<ILinqToSolrFacet> FacetsToIgnore { get; }
+        public ICollection<ILinqToSolrSort> Sortings { get; }
+        public ICollection<ILinqToSolrJoiner> JoinFields { get; }
         public bool IsGroupEnabled { get; set; }
 
-        public ICollection<string> GroupFields { get; set; }
-        public Type CurrentType { get; set; }
-        public LinqSolrSelect Select { get; set; }
+        public string Index { get; set; }
+        internal string FilterUrl { get; set; }
 
-        internal ICollection<LinqToSolrJoiner> JoinFields { get; set; }
 
-        public LinqToSolrQuery()
+        public ICollection<string> GroupFields { get; }
+        public ILinqSolrSelect Select { get; set; }
+        public int Take { get; set; }
+        public int Start { get; set; }
+        IQueryable Query { get; }
+        public LinqToSolrQuery(IQueryable query)
         {
-            Filters = new List<LinqToSolrFilter>();
-            Facets = new List<LinqToSolrFacet>();
-            FacetsToIgnore = new List<LinqToSolrFacet>();
-            Sortings = new List<LinqToSolrSort>();
+            Query = query;
+            Provider = query.Provider as ILinqToSolrProvider;
+            Filters = new List<ILinqToSolrFilter>();
+            Facets = new List<ILinqToSolrFacet>();
+            FacetsToIgnore = new List<ILinqToSolrFacet>();
+            Sortings = new List<ILinqToSolrSort>();
             GroupFields = new List<string>();
-            JoinFields = new List<LinqToSolrJoiner>();
+            JoinFields = new List<ILinqToSolrJoiner>();
         }
-
-        public LinqToSolrQuery AddFilter(LambdaExpression field, params object[] values)
-        {
-            Filters.Add(LinqToSolrFilter.Create(field, values));
-
-            return this;
-        }
-        public LinqToSolrQuery AddFilter(Type objectType, string field, params object[] values)
-        {
-            Filters.Add(LinqToSolrFilter.Create(objectType, field, values));
-
-            return this;
-        }
-        public LinqToSolrQuery AddFilter<T>(string field, params object[] values)
-        {
-            Filters.Add(LinqToSolrFilter.Create<T>(field, values));
-
-            return this;
-        }
-
-
-        public LinqToSolrQuery AddSorting(Expression field, SolrSortTypes order)
-        {
-            Sortings.Add(LinqToSolrSort.Create(field, order));
-
-            return this;
-        }
-
-        public LinqToSolrQuery AddFacet(LambdaExpression field)
-        {
-            Facets.Add(LinqToSolrFacet.Create(field));
-
-            return this;
-        }
-
-        public LinqToSolrFacet GetFacet(string propertyName)
-        {
-            return Facets.FirstOrDefault(x => x.Name == propertyName);
-        }
-
-
-
 
     }
 }

@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
 using LinqToSolr.Data;
-using LinqToSolr.Helpers.Json;
+using LinqToSolr.Interfaces;
 using LinqToSolr.Services;
+using LinqToSolr.Helpers;
 
 namespace LinqToSolr.Expressions
 {
@@ -17,50 +17,32 @@ namespace LinqToSolr.Expressions
         private StringBuilder sb;
         private bool _inRangeQuery;
         private bool _inRangeEqualQuery;
-        private ILinqToSolrService _service;
+        private ILinqToSolrQuery query;
         private bool _isNotEqual;
         private Type _elementType;
         internal bool IsMultiList;
 
-        internal LinqToSolrQueryTranslator(ILinqToSolrService query)
+
+        internal LinqToSolrQueryTranslator(ILinqToSolrQuery query)
         {
-            _service = query;
-            _elementType = GetElementType(_service.ElementType);
+            this.query = query;
+            _elementType = GetElementType(TypeSystem.GetElementType(query.Expression.Type));
         }
 
-        internal LinqToSolrQueryTranslator(ILinqToSolrService query, Type elementType)
+        internal string GetFieldName(MemberInfo member, out string format)
         {
-            _service = query;
-            _elementType = GetElementType(elementType);
-            _elementType = elementType;
-        }
+            format = null;
+            var fieldName = member.GetSolrFieldName(out format);
 
-        internal string GetFieldName(MemberInfo member)
-        {
-
-#if NET45_OR_GREATER
-                var dataMemberAttribute = member.GetCustomAttribute<JsonPropertyAttribute>();
-#else
-            var dataMemberAttribute = member.GetCustomAttributes(typeof(JsonPropertyAttribute), true).FirstOrDefault() as JsonPropertyAttribute;
-
-#endif
-
-            var fieldName = !string.IsNullOrEmpty(dataMemberAttribute?.PropertyName)
-                ? dataMemberAttribute.PropertyName
-                : member.Name;
-
-            if (_service.CurrentQuery.FacetsToIgnore.Any())
+            if (query.FacetsToIgnore.Any())
             {
-                var facetToIgnoreName =
-                    _service.CurrentQuery.FacetsToIgnore.FirstOrDefault(x => x.SolrName == fieldName);
-                if (!string.IsNullOrEmpty(facetToIgnoreName?.SolrName))
+                var facetToIgnoreName = query.FacetsToIgnore.FirstOrDefault(x => x.Field == fieldName);
+                if (!string.IsNullOrEmpty(facetToIgnoreName?.Field))
                 {
-                    return string.Format("{{!tag={0}}}{1}", facetToIgnoreName.SolrName, fieldName);
+                    return string.Format("{{!tag={0}}}{1}", facetToIgnoreName.Field, fieldName);
                 }
             }
-
             return fieldName;
-
         }
 
 
@@ -105,10 +87,10 @@ namespace LinqToSolr.Expressions
             {
                 var lambda = (LambdaExpression)StripQuotes(m.Arguments[1]);
 
-                var solrQueryTranslator = new LinqToSolrQueryTranslator(_service);
+                var solrQueryTranslator = new LinqToSolrQueryTranslator(query);
                 var fq = solrQueryTranslator.Translate(lambda.Body);
                 sb.AppendFormat("&fq={0}", fq);
-
+                query.Filters.Add(LinqToSolrFilter.Create(fq));
                 var arr = StripQuotes(m.Arguments[0]);
                 Visit(arr);
                 return m;
@@ -116,14 +98,14 @@ namespace LinqToSolr.Expressions
             if (m.Method.Name == "Take")
             {
                 var takeNumber = (int)((ConstantExpression)m.Arguments[1]).Value;
-                _service.Configuration.Take = takeNumber;
+                query.Take = takeNumber;
                 Visit(m.Arguments[0]);
                 return m;
             }
             if (m.Method.Name == "Skip")
             {
                 var skipNumber = (int)((ConstantExpression)m.Arguments[1]).Value;
-                _service.Configuration.Start = skipNumber;
+                query.Start = skipNumber;
                 Visit(m.Arguments[0]);
                 return m;
             }
@@ -133,30 +115,23 @@ namespace LinqToSolr.Expressions
             {
                 var lambda = (LambdaExpression)StripQuotes(m.Arguments[1]);
 
-                _service.CurrentQuery.AddSorting(lambda.Body, SolrSortTypes.Asc);
-
+                query.Sortings.Add(LinqToSolrSort.Create(lambda.Body, SolrSortTypes.Asc));
                 Visit(m.Arguments[0]);
-
                 return m;
             }
 
             if (m.Method.Name == "OrderByDescending" || m.Method.Name == "ThenByDescending")
             {
                 var lambda = (LambdaExpression)StripQuotes(m.Arguments[1]);
-                _service.CurrentQuery.AddSorting(lambda.Body, SolrSortTypes.Desc);
-
+                query.Sortings.Add(LinqToSolrSort.Create(lambda.Body, SolrSortTypes.Desc));
                 Visit(m.Arguments[0]);
-
                 return m;
             }
 
-
-
             if (m.Method.Name == "Select")
             {
-                _service.CurrentQuery.Select = new LinqSolrSelect(StripQuotes(m.Arguments[1]));
+                query.Select = new LinqSolrSelect(StripQuotes(m.Arguments[1]));
                 Visit(m.Arguments[0]);
-
                 return m;
             }
 
@@ -166,10 +141,7 @@ namespace LinqToSolr.Expressions
                 if (m.Method.DeclaringType == typeof(string))
                 {
                     var str = string.Format("*{0}*", ((ConstantExpression)StripQuotes(m.Arguments[0])).Value);
-
-
                     Visit(BinaryExpression.Equal(m.Object, ConstantExpression.Constant(str)));
-
                     return m;
                 }
                 else
@@ -187,7 +159,7 @@ namespace LinqToSolr.Expressions
                     else
                     {
                         var newExpr = Expression.Equal(m.Object, m.Arguments[0]);
-                        var expr = new LinqToSolrQueryTranslator(_service, m.Arguments[0].Type);
+                        var expr = new LinqToSolrQueryTranslator(query);
                         expr.IsMultiList = true;
                         var multilistfq = expr.Translate(newExpr);
                         sb.AppendFormat("{0}", multilistfq);
@@ -222,23 +194,13 @@ namespace LinqToSolr.Expressions
 
             if (m.Method.Name == "GroupBy")
             {
-
-                _service.CurrentQuery.IsGroupEnabled = true;
                 var arr = StripQuotes(m.Arguments[1]);
-#if NETSTANDARD
-                var solrQueryTranslator =
-new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)arr).Body).Member.DeclaringType);
-#else
-                var solrQueryTranslator = new LinqToSolrQueryTranslator(_service,
-                    ((MemberExpression)((LambdaExpression)arr).Body).Member.ReflectedType);
-#endif
-
-                _service.CurrentQuery.GroupFields.Add(solrQueryTranslator.Translate(arr));
+                var solrQueryTranslator = new LinqToSolrQueryTranslator(query);
+                query.GroupFields.Add(solrQueryTranslator.Translate(arr));
                 Visit(m.Arguments[0]);
 
                 return m;
 
-                //throw new Exception("The method 'GroupBy' is not supported in Solr. For native FACETS support use SolrQuaryableExtensions.GroupBySolr instead.");
             }
 
             throw new NotSupportedException(string.Format("The method '{0}' is not supported", m.Method.Name));
@@ -271,11 +233,7 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
 
             if (b.Left is ConstantExpression)
             {
-#if NETSTANDARD
-                throw new Exception("Failed to parse expression. Ensure the Solr fields are always come in the left part of comparison.");
-#else
                 throw new System.Data.InvalidExpressionException("Failed to parse expression. Ensure the Solr fields are always come in the left part of comparison.");
-#endif
             }
             if (b.NodeType == ExpressionType.NotEqual)
             {
@@ -381,7 +339,7 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
 #else
             var isArray = val.GetType().GetInterface("IEnumerable`1") != null;
 #endif
-
+            var format = !string.IsNullOrEmpty(formatValue) ? "{0:" + formatValue + "}" : "{0}";
             //Set date format of Solr 1995-12-31T23:59:59.999Z
             if (val.GetType() == typeof(DateTime))
             {
@@ -389,9 +347,10 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
             }
             else if (!(val is string) && isArray)
             {
+
                 var array = (IEnumerable)val;
                 var arrstring = string.Join(" OR ",
-                    array.Cast<object>().Select(x => string.Format("\"{0}\"", x)).ToArray());
+                    array.Cast<object>().Select(x => string.Format("\"" + format + "\"", x)).ToArray());
                 sb.AppendFormat(": ({0})", arrstring);
 
             }
@@ -412,10 +371,18 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
                 }
                 else
                 {
-                    sb.Append(val);
+                    if (!string.IsNullOrEmpty(formatValue))
+                    {
+                        sb.AppendFormat(format, val);
+                    }
+                    else
+                    {
+                        sb.Append(val);
 
+                    }
                 }
             }
+            formatValue = null;
         }
 
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
@@ -423,6 +390,7 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
             return base.VisitMemberAssignment(node);
         }
 
+        string formatValue = null;
 #if NET35
         protected override Expression VisitMemberAccess(MemberExpression m)
 #else
@@ -432,7 +400,8 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
             if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
             {
 
-                var fieldName = GetFieldName(m.Member);
+                var fieldName = GetFieldName(m.Member, out formatValue);
+
                 sb.Append(_isNotEqual ? string.Format("-{0}", fieldName) : fieldName);
                 return m;
             }
@@ -441,28 +410,30 @@ new LinqToSolrQueryTranslator(_service, ((MemberExpression)((LambdaExpression)ar
                 if (m.Expression.NodeType == ExpressionType.Constant)
                 {
                     var ce = (ConstantExpression)m.Expression;
-                    sb.Append(ce.Value);
+                    if (!string.IsNullOrEmpty(formatValue))
+                    {
+                        sb.AppendFormat("{0:" + formatValue + "}", ce.Value);
+                    }
+                    else
+                    {
+                        sb.Append(ce.Value);
+                    }
+                    formatValue = null;
                 }
                 else if (m.Expression.NodeType == ExpressionType.MemberAccess)
                 {
 
                     var ce = (MemberExpression)m.Expression;
-#if NET40 || NET35 || PORTABLE40
-                    var joinAttr =
-                        Attribute.GetCustomAttribute(ce.Member, typeof(LinqToSolrForeignKeyAttribute), true) as
-                            LinqToSolrForeignKeyAttribute;
-#else
                     var joinAttr = ce.Member.GetCustomAttribute<LinqToSolrForeignKeyAttribute>();
-#endif
 
                     if (joinAttr != null)
                     {
-                        var fieldName = GetFieldName(m.Member);
+                        var fieldName = GetFieldName(m.Member, out formatValue);
                         var topType = ce.Expression as ParameterExpression;
                         if (topType != null)
                         {
                             var joiner = new LinqToSolrJoiner(ce.Member.Name, topType.Type);
-                            var joinstr = string.Format("!join from={0} to={1} fromIndex={2}", joiner.FieldKey, joiner.ForeignKey, _service.Configuration.GetIndex(joiner.PropertyRealType));
+                            var joinstr = string.Format("!join from={0} to={1} fromIndex={2}", joiner.FieldKey, joiner.ForeignKey, query.Provider.Service.Configuration.GetIndex(joiner.PropertyRealType));
                             sb.Append("{" + joinstr + "}" + fieldName);
                         }
                     }

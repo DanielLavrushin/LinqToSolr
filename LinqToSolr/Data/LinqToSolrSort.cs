@@ -4,6 +4,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 
 using LinqToSolr.Helpers.Json;
+using LinqToSolr.Interfaces;
+using LinqToSolr.Helpers;
 
 namespace LinqToSolr.Data
 {
@@ -14,35 +16,21 @@ namespace LinqToSolr.Data
         Desc
     }
 
-
-    public class LinqToSolrSort
+    public class LinqToSolrSort : ILinqToSolrSort
     {
-        public string Name { get; set; }
+        public string Field { get; set; }
         public SolrSortTypes Order { get; set; }
 
         public static LinqToSolrSort Create(Expression fieldExp, SolrSortTypes order)
         {
             var o = new LinqToSolrSort();
-
             var fb = fieldExp as MemberExpression;
             if (fb != null)
             {
-#if NET40 || NET35
-                var dataMemberAttribute = Attribute.GetCustomAttribute(fb.Member, typeof(JsonPropertyAttribute), true) as JsonPropertyAttribute;
-#else
-                var dataMemberAttribute = fb.Member.GetCustomAttribute<JsonPropertyAttribute>();
-#endif
-                o.Name = !string.IsNullOrEmpty(dataMemberAttribute?.PropertyName)
-                    ? dataMemberAttribute.PropertyName
-                    : fb.Member.Name;
-
-
+                o.Field = fb.Member.GetSolrFieldName();
                 o.Order = order;
-
-
                 return o;
             }
-
             return null;
         }
     }

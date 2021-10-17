@@ -5,10 +5,10 @@ namespace LinqToSolr.Data
 {
     public class LinqToSolrResponseError
     {
-        [JsonProperty("msg")]
+        [SolrField("msg")]
         public string Message { get; set; }
 
-        [JsonProperty("code")]
+        [SolrField("code")]
         public int Code { get; set; }
     }
 }

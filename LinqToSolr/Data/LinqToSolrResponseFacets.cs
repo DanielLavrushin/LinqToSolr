@@ -36,7 +36,7 @@ namespace LinqToSolr.Data
             if (fb != null)
             {
                 var dataMemberAttribute =
-                    fb.Member.GetCustomAttributes(typeof(JsonPropertyAttribute), false).ToArray()[0] as JsonPropertyAttribute;
+                    fb.Member.GetCustomAttributes(typeof(SolrFieldAttribute), false).ToArray()[0] as SolrFieldAttribute;
 
                 var k = dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.PropertyName)
                       ? dataMemberAttribute.PropertyName

@@ -4,10 +4,10 @@ namespace LinqToSolr.Data
 {
     public class LinqToSolrResponseHeader
     {
-        [JsonProperty("status")]
+        [SolrField("status")]
         public int Status { get; set; }
 
-        [JsonProperty("QTime")]
+        [SolrField("QTime")]
         public int Time { get; set; }
     }
 }
