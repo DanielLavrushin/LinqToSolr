@@ -10,6 +10,8 @@ namespace LinqToSolr.Helpers.Json
 {
     public static class JsonParser
     {
+
+
         [ThreadStatic] static Stack<List<string>> splitArrayPool;
         [ThreadStatic] static StringBuilder stringBuilder;
         [ThreadStatic] static Dictionary<Type, Dictionary<string, FieldInfo>> fieldInfoCache;

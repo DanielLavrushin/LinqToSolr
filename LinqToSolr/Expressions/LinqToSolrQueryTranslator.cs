@@ -135,7 +135,6 @@ namespace LinqToSolr.Expressions
                 return m;
             }
 
-
             if (m.Method.Name == "Contains")
             {
                 if (m.Method.DeclaringType == typeof(string))
@@ -343,7 +342,9 @@ namespace LinqToSolr.Expressions
             //Set date format of Solr 1995-12-31T23:59:59.999Z
             if (val.GetType() == typeof(DateTime))
             {
+                sb.Append('"');
                 sb.Append(((DateTime)val).ToString("yyyy-MM-ddThh:mm:ss.fffZ"));
+                sb.Append('"');
             }
             else if (!(val is string) && isArray)
             {

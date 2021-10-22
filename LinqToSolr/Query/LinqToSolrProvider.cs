@@ -15,8 +15,11 @@ namespace LinqToSolr.Query
     public interface ILinqToSolrProvider : IQueryProvider
     {
         ILinqToSolrService Service { get; }
-        ICollection<TResult> ExecuteQuery<TResult>(LinqToSolrQueriable<TResult> quariable);
-
+        ICollection<TResult> ExecuteQuery<TResult>(ILinqToSolrQueriable<TResult> quariable);
+        void DeleteAll<TResult>();
+        void Delete<TResult>(params object[] id);
+        void Delete<TResult>(ILinqToSolrQueriable<TResult> quariable);
+        IEnumerable<TResult> AddOrUpdate<TResult>(IEnumerable<TResult> document, bool softCommit = false);
     }
     public class LinqToSolrProvider : ILinqToSolrProvider
     {
@@ -33,18 +36,19 @@ namespace LinqToSolr.Query
 
         public IQueryable CreateQuery(Expression expression)
         {
-            var elementType = TypeSystem.GetElementType(expression.Type);
-            query = (IQueryable)Activator.CreateInstance(typeof(LinqToSolrQueriable<>).MakeGenericType(elementType), new object[] { this, expression });
+            var elementType = TypeSystem.GetElementType(((MethodCallExpression)expression).Arguments[0].Type);
+            query = query ?? (IQueryable)Activator.CreateInstance(typeof(LinqToSolrQueriable<>).MakeGenericType(elementType), new object[] { this, expression });
             return query;
         }
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
         {
+            query = new LinqToSolrQueriable<TElement>(this, expression);
             return CreateQuery(expression) as LinqToSolrQueriable<TElement>;
         }
 
         public object Execute(Expression expression)
         {
-            var elementType = TypeSystem.GetElementType(expression.Type);
+            var elementType = TypeSystem.GetElementType(((MethodCallExpression)expression).Arguments[0].Type);
             var providerQuery = GetType().GetMethod("ExecuteQuery").MakeGenericMethod(new[] { elementType });
             var result = providerQuery.Invoke(this, new[] { query });
             return IsEnumerable ? result : ((IEnumerable)result).Cast<object>().FirstOrDefault();
@@ -55,13 +59,6 @@ namespace LinqToSolr.Query
         {
             IsEnumerable = typeof(TResult).Name == "IEnumerable`1";
             return (TResult)Execute(expression);
-        }
-
-        internal string GetSolrUrl(ILinqToSolrQuery query)
-        {
-            var qt = new LinqToSolrQueryTranslator(query);
-            var expression = Evaluator.PartialEval(query.Expression, e => e.NodeType != ExpressionType.Parameter && !typeof(IQueryable).IsAssignableFrom(e.Type));
-            return qt.Translate(BooleanVisitor.Process(expression));
         }
 
         internal SolrWebRequest PrepareQueryRequest<TResult>(ILinqToSolrQuery query)
@@ -114,18 +111,6 @@ namespace LinqToSolr.Query
                 }
             }
 
-
-            //if (!string.IsNullOrEmpty(query.FilterUrl))
-            //{
-            //    foreach (var fstring in query.FilterUrl.Split(new[] { "&fq=" }, StringSplitOptions.None))
-            //    {
-            //        if (!string.IsNullOrEmpty(fstring))
-            //        {
-            //            request.AddParameter("fq", fstring);
-            //        }
-            //    }
-            //}
-
             if (query.Sortings.Any())
             {
                 request.AddParameter("sort", string.Join(", ", query.Sortings.Select(x =>
@@ -159,18 +144,126 @@ namespace LinqToSolr.Query
 
             return request;
         }
-
-
-        public virtual ICollection<TResult> ExecuteQuery<TResult>(LinqToSolrQueriable<TResult> quariable)
+        private SolrWebRequest PrepareAddOrUpdateRequest<TResult>(IEnumerable<TResult> documents, bool softCommit = false)
         {
+            var config = Service.Configuration;
+            var index = config.GetIndex(typeof(TResult));
+
+            string path = string.Format("/{0}/update", index);
+            var request = new SolrWebRequest(path, SolrWebMethod.POST);
+            request.AddParameter("wt", "json");
+            request.AddParameter("commit", "true");
+            if (softCommit)
+            {
+                request.AddParameter("softCommit", "true");
+            }
+            if (documents != null && documents.Any())
+            {
+                request.Body = documents.ToJson();
+            }
+            return request;
+        }
+        private SolrWebRequest PrepareDeleteRequest<TResult>(ILinqToSolrQuery query, object[] deleteDocIds = null, bool softCommit = false)
+        {
+            var config = Service.Configuration;
+            var index = config.GetIndex(typeof(TResult));
+
+            string path = string.Format("/{0}/update", index);
+            var request = new SolrWebRequest(path, SolrWebMethod.POST);
+
+            request.AddParameter("wt", "json");
+            request.AddParameter("commit", "true");
+            if (softCommit)
+            {
+                request.AddParameter("softCommit", "true");
+            }
+
+            if (deleteDocIds != null && deleteDocIds.Any())
+            {
+                request.Body = new { delete = deleteDocIds }.ToJson();
+            }
+            else if (query != null)
+            {
+                var deleteByQuery = new List<string>();
+                if (query.Filters.Any())
+                {
+                    foreach (var filter in query.Filters)
+                    {
+                        if (filter.Values == null)
+                        {
+                            deleteByQuery.Add(filter.Field);
+                        }
+                        else
+                        {
+                            deleteByQuery.Add($"{filter.Field}: ({string.Join(" OR ", filter.Values.Select(x => $"\"{{x}}\"").ToArray())})");
+                        }
+                    }
+                    request.Body = new { delete = new { query = string.Join(" AND ", deleteByQuery.ToArray()) } }.ToJson();
+                }
+            }
+            return request;
+        }
+        public virtual ICollection<TResult> ExecuteQuery<TResult>(ILinqToSolrQueriable<TResult> quariable)
+        {
+            quariable = quariable ?? new LinqToSolrQueriable<TResult>(this, null);
             var solrQuery = quariable.Translate();
             var request = PrepareQueryRequest<TResult>(solrQuery);
             var response = Client.Execute(request);
 
             Service.LastResponseUrl = response.ResponseUri;
             var current = response.Content.FromJson<SolrResponse<TResult>>();
+            Finalize(current);
 
             return current.Response.Documents;
+        }
+        public void DeleteAll<TResult>()
+        {
+            var quariable = new LinqToSolrQueriable<TResult>(this, null);
+            var solrQuery = quariable.Translate();
+
+            solrQuery.Filters.Clear();
+            solrQuery.Filters.Add(LinqToSolrFilter.Create("*:*"));
+            var request = PrepareDeleteRequest<TResult>(solrQuery);
+            var response = Client.Execute(request);
+            var current = response.Content.FromJson<SolrResponse<TResult>>();
+            Finalize(current);
+        }
+        public void Delete<TResult>(ILinqToSolrQueriable<TResult> quariable)
+        {
+            quariable = quariable ?? new LinqToSolrQueriable<TResult>(this, null);
+            var solrQuery = quariable.Translate();
+
+            var request = PrepareDeleteRequest<TResult>(solrQuery);
+            var response = Client.Execute(request);
+            var current = response.Content.FromJson<SolrResponse<TResult>>();
+            Finalize(current);
+        }
+        public void Delete<TResult>(params object[] id)
+        {
+            var request = PrepareDeleteRequest<TResult>(null, id);
+            var response = Client.Execute(request);
+            var current = response.Content.FromJson<SolrResponse<TResult>>();
+            Finalize(current);
+
+        }
+
+        public IEnumerable<TResult> AddOrUpdate<TResult>(IEnumerable<TResult> document, bool softCommit = false)
+        {
+            var request = PrepareAddOrUpdateRequest(document, softCommit);
+            var response = Client.Execute(request);
+            var current = response.Content.FromJson<SolrResponse<TResult>>();
+            Finalize(current);
+            return document;
+        }
+
+
+        private void Finalize<TResult>(SolrResponse<TResult> response)
+        {
+            Console.WriteLine($"Time: {response.Header.Time}");
+            if (response.Error != null)
+            {
+                throw new Exception(response.Error.Message);
+            }
         }
     }
 }

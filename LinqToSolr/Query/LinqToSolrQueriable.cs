@@ -51,6 +51,11 @@ namespace LinqToSolr.Query
             qt.Translate(BooleanVisitor.Process(expression));
             return SolrQuery;
         }
+
+        public IEnumerable<TObject> Delete(IEnumerable<TObject> entities)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public static class SolrQuaryableExtensions
@@ -71,11 +76,32 @@ namespace LinqToSolr.Query
             }
             return enumerable;
         }
-
-        public static IQueryable<TSource> ExcludeFacetFromQuery<TSource>(this IQueryable<TSource> enumerable,
-            Expression<Func<TSource, object>> expression)
+        public static void Delete<TSource>(this IQueryable<TSource> enumerable, params object[] id)
         {
-            var query = enumerable as LinqToSolrQueriable<TSource>;
+            var query = enumerable as ILinqToSolrQueriable<TSource>;
+            if (query == null) throw new ArgumentException("GroupBySolr must be invoked as SolrQueryable extension");
+
+            var provider = (ILinqToSolrProvider)query.Provider;
+            provider.Delete<TSource>(id);
+        }
+        public static void Delete<TSource>(this IQueryable<TSource> enumerable, Expression<Func<TSource, bool>> expression)
+        {
+            var query = enumerable as ILinqToSolrQueriable<TSource>;
+            if (query == null) throw new ArgumentException("GroupBySolr must be invoked as SolrQueryable extension");
+
+            var translator = new LinqToSolrQueryTranslator(query.SolrQuery);
+            var q = Evaluator.PartialEval(expression);
+            var strQuery = translator.Translate(BooleanVisitor.Process(q));
+            query.SolrQuery.Filters.Clear();
+            query.SolrQuery.Filters.Add(LinqToSolrFilter.Create(strQuery));
+            var provider = (ILinqToSolrProvider)query.Provider;
+            provider.Delete(query);
+        }
+
+
+        public static IQueryable<TSource> ExcludeFacetFromQuery<TSource>(this IQueryable<TSource> enumerable, Expression<Func<TSource, object>> expression)
+        {
+            var query = enumerable as ILinqToSolrQueriable<TSource>;
             query.SolrQuery.FacetsToIgnore.Add(LinqToSolrFacet.Create(expression));
             return enumerable;
         }
@@ -87,9 +113,9 @@ namespace LinqToSolr.Query
 
         public static IEnumerable<IGrouping<string, TKey>> GroupByFacets<TSource, TKey>(this IQueryable<TSource> enumerable, int facetsLimit, params Expression<Func<TSource, TKey>>[] expression)
         {
-            var query = enumerable as LinqToSolrQueriable<TSource>;
+            var query = enumerable as ILinqToSolrQueriable<TSource>;
             if (query == null) throw new ArgumentException("GroupBySolr must be invoked as SolrQueryable extension");
-            var service = ((LinqToSolrProvider)query.Provider).Service;
+            var service = ((ILinqToSolrProvider)query.Provider).Service;
 
             foreach (var expr in expression)
             {

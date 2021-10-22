@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -63,41 +64,13 @@ namespace LinqToSolr
         private string _endpoint;
         public SolrWebClient(string endPoint)
         {
-        //    ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            //    ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | (SecurityProtocolType)3072;
 
 
             _endpoint = endPoint;
         }
 
-#if NET40
-        SolrWebRequest CurrentRequest;
-        private void GetRequestStreamCallback(IAsyncResult asynchronousResult)
-        {
-
-            HttpWebRequest request = (HttpWebRequest)asynchronousResult.AsyncState;
-
-            var postStream = request.EndGetRequestStream(asynchronousResult);
-
-            byte[] byteArray = Encoding.UTF8.GetBytes(CurrentRequest.Body);
-
-            postStream.Write(byteArray, 0, CurrentRequest.Body.Length);
-            postStream.Flush();
-
-            var result = request.BeginGetResponse(new AsyncCallback(GetResponseCallback), request);
-        }
-
-        private void GetResponseCallback(IAsyncResult asynchronousResult)
-        {
-            var request = (HttpWebRequest)asynchronousResult.AsyncState;
-            var response = (HttpWebResponse)request.EndGetResponse(asynchronousResult);
-            var streamResponse = response.GetResponseStream();
-            var streamRead = new System.IO.StreamReader(streamResponse);
-            var responseString = streamRead.ReadToEnd();
-            streamResponse.Flush();
-        }
-
-#endif
         public SolrWebResponse Execute(SolrWebRequest request)
         {
 
@@ -108,32 +81,8 @@ namespace LinqToSolr
             var response = new SolrWebResponse();
             response.ResponseUri = new Uri(paramStr);
 
-#if NET40
-            var webRequest = (HttpWebRequest)WebRequest.Create(paramStr);
 
-            if (request.Method == SolrWebMethod.GET)
-            {
-                using (var webResponse =
-                    (HttpWebResponse)(System.Threading.Tasks.Task<WebResponse>.Factory.FromAsync(
-                        webRequest.BeginGetResponse, webRequest.EndGetResponse, null)).Result)
-                {
-                    using (System.IO.Stream stream = webResponse.GetResponseStream())
-                    {
-                        var reader = new System.IO.StreamReader(stream, Encoding.UTF8);
-                        response.Content = reader.ReadToEnd();
-                        response.StatusCode = webResponse.StatusCode;
-                    }
-                }
-            }
-            else
-            {
-                webRequest.Method = "POST";
-                webRequest.ContentType = "application/json";
-                CurrentRequest = request;
-                var result = (HttpWebRequest)webRequest.BeginGetRequestStream(new AsyncCallback(GetRequestStreamCallback), webRequest).AsyncState;
-                return response;
-            }
-#elif NETSTANDARD
+#if NETSTANDARD
             var client = new System.Net.Http.HttpClient();
             client.DefaultRequestHeaders.Accept.Add(
                 new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
@@ -154,20 +103,39 @@ namespace LinqToSolr
             }
 #else
 
-        
+
             var webRequest = (HttpWebRequest)WebRequest.Create(paramStr);
             if (request.Method == SolrWebMethod.GET)
             {
-                using (var webResponse = (HttpWebResponse)webRequest.GetResponse())
+                try
                 {
-                    var encoding = Encoding.GetEncoding(webResponse.CharacterSet);
-
-                    using (var responseStream = webResponse.GetResponseStream())
+                    using (var webResponse = (HttpWebResponse)webRequest.GetResponse())
                     {
-                        using (var reader = new System.IO.StreamReader(responseStream, encoding))
+                        var encoding = Encoding.GetEncoding(webResponse.CharacterSet);
+
+                        using (var responseStream = webResponse.GetResponseStream())
                         {
-                            response.Content = reader.ReadToEnd();
+                            using (var reader = new System.IO.StreamReader(responseStream, encoding))
+                            {
+                                response.Content = reader.ReadToEnd();
+                                response.StatusCode = webResponse.StatusCode;
+                            }
+                        }
+                    }
+                }
+                catch (WebException e)
+                {
+                    using (WebResponse res = e.Response)
+                    {
+                        var webResponse = (HttpWebResponse)res;
+                        Console.WriteLine("Error code: {0}", webResponse.StatusCode);
+                        using (Stream d = res.GetResponseStream())
+                        using (var reader = new StreamReader(d))
+                        {
+                            string text = reader.ReadToEnd();
+                            response.Content = text;
                             response.StatusCode = webResponse.StatusCode;
+                            Console.WriteLine(response.Content);
                         }
                     }
                 }
@@ -182,10 +150,28 @@ namespace LinqToSolr
                 {
                     stream.Write(data, 0, data.Length);
                 }
-
-                var webResponse = (HttpWebResponse)webRequest.GetResponse();
-                response.Content = new System.IO.StreamReader(webResponse.GetResponseStream()).ReadToEnd();
-                response.StatusCode = webResponse.StatusCode;
+                try
+                {
+                    var webResponse = (HttpWebResponse)webRequest.GetResponse();
+                    response.Content = new StreamReader(webResponse.GetResponseStream()).ReadToEnd();
+                    response.StatusCode = webResponse.StatusCode;
+                }
+                catch (WebException e)
+                {
+                    using (WebResponse res = e.Response)
+                    {
+                        var webResponse = (HttpWebResponse)res;
+                        Console.WriteLine("Error code: {0}", webResponse.StatusCode);
+                        using (Stream d = res.GetResponseStream())
+                        using (var reader = new StreamReader(d))
+                        {
+                            string text = reader.ReadToEnd();
+                            response.Content = text;
+                            response.StatusCode = webResponse.StatusCode;
+                            Console.WriteLine(response.Content);
+                        }
+                    }
+                }
             }
 #endif
             return response;

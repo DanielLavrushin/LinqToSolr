@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using LinqToSolr.Interfaces;
+using LinqToSolr.Services;
 
 namespace LinqToSolr.Data
 {
@@ -75,17 +76,15 @@ namespace LinqToSolr.Data
                     return index.Index;
                 }
             }
-            return null;
+
+            throw new NullReferenceException($"None of the indexes are mapped to the type {type.Name}");
+
         }
 
         public static ILinqToSolrConfiguration Instance(string endpoint)
         {
-
             _instance = _instance ?? new LinqToSolrConfiguration(endpoint);
-
             return _instance;
         }
-
-
     }
 }

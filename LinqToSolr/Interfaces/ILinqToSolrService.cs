@@ -8,18 +8,16 @@ using LinqToSolr.Interfaces;
 
 namespace LinqToSolr.Services
 {
-    public interface ILinqToSolrService
+    public interface ILinqToSolrService : IDisposable
     {
         Uri LastResponseUrl { get; set; }
         ILinqToSolrConfiguration Configuration { get; }
         ILinqToSolrProvider Provider { get; }
-        IQueryable<T> AsQueryable<T>();
+        IQueryable<TResult> AsQueryable<TResult>();
 
-        //   ICollection<T> LastDocuments<T>();
-        //    void AddOrUpdate<T>(T[] document, bool softCommit = false);
-        //     void AddOrUpdate<T>(T document, bool softCommit = false);
-        //      void Delete<T>(object[] documentId, bool softCommit = false);
-        //      void Delete<T>(object documentId, bool softCommit = false);
-        //  void Delete<T>(Expression<Func<T, bool>> query, bool softCommit = false);
+
+        void DeleteAll<TObject>(bool softCommit = false);
+        IEnumerable<TResult> AddOrUpdate<TResult>(IEnumerable<TResult> document, bool softCommit = false);
+
     }
 }

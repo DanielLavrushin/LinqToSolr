@@ -74,10 +74,16 @@ namespace LinqToSolr.Helpers.Json
             {
                 stringBuilder.Append(((bool)item) ? "true" : "false");
             }
+            else if (type == typeof(Guid))
+            {
+                stringBuilder.Append('"');
+                stringBuilder.Append(((Guid)item).ToString());
+                stringBuilder.Append('"');
+            }
             else if (type == typeof(DateTime))
             {
                 stringBuilder.Append('"');
-                stringBuilder.Append(((DateTime)item).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                stringBuilder.Append(((DateTime)item).ToString("yyyy-MM-ddThh:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture));
                 stringBuilder.Append('"');
             }
             else if (type.GetTypeInfo().IsEnum)
@@ -184,12 +190,7 @@ namespace LinqToSolr.Helpers.Json
         {
             if (member.IsDefined(typeof(SolrFieldAttribute), true))
             {
-
-#if NET40 || NET35
-                var dataMemberAttribute = (SolrFieldAttribute)Attribute.GetCustomAttribute(member.DeclaringType, typeof(SolrFieldAttribute));
-#else
                 var dataMemberAttribute = member.GetCustomAttribute<SolrFieldAttribute>();
-#endif
                 if (!string.IsNullOrEmpty(dataMemberAttribute.PropertyName))
                     return dataMemberAttribute.PropertyName;
             }
