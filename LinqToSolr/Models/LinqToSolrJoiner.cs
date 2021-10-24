@@ -5,7 +5,7 @@ using System.Reflection;
 
 using LinqToSolr.Interfaces;
 
-namespace LinqToSolr.Data
+namespace LinqToSolr.Models
 {
     public class LinqToSolrJoiner : ILinqToSolrJoiner
     {

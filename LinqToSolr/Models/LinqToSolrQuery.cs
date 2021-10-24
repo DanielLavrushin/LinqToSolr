@@ -12,7 +12,7 @@ using LinqToSolr.Query;
 using LinqToSolr.Expressions;
 #endif
 
-namespace LinqToSolr.Data
+namespace LinqToSolr.Models
 {
     public class LinqToSolrQuery : ILinqToSolrQuery
     {
@@ -23,13 +23,12 @@ namespace LinqToSolr.Data
         public ICollection<ILinqToSolrFacet> FacetsToIgnore { get; }
         public ICollection<ILinqToSolrSort> Sortings { get; }
         public ICollection<ILinqToSolrJoiner> JoinFields { get; }
-        public bool IsGroupEnabled { get; set; }
 
         public string Index { get; set; }
         internal string FilterUrl { get; set; }
 
 
-        public ICollection<string> GroupFields { get; }
+        public ICollection<ILinqToSolrGrouping> GroupFields { get; }
         public ILinqSolrSelect Select { get; set; }
         public int Take { get; set; }
         public int Start { get; set; }
@@ -42,7 +41,7 @@ namespace LinqToSolr.Data
             Facets = new List<ILinqToSolrFacet>();
             FacetsToIgnore = new List<ILinqToSolrFacet>();
             Sortings = new List<ILinqToSolrSort>();
-            GroupFields = new List<string>();
+            GroupFields = new List<ILinqToSolrGrouping>();
             JoinFields = new List<ILinqToSolrJoiner>();
         }
 

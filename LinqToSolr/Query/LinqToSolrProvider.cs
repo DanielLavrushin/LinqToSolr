@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using LinqToSolr.Expressions;
 using LinqToSolr.Services;
-using LinqToSolr.Data;
+using LinqToSolr.Models;
 using System.Collections.Generic;
 using LinqToSolr.Interfaces;
 using LinqToSolr.Helpers.Json;
@@ -15,7 +15,7 @@ namespace LinqToSolr.Query
     public interface ILinqToSolrProvider : IQueryProvider
     {
         ILinqToSolrService Service { get; }
-        ICollection<TResult> ExecuteQuery<TResult>(ILinqToSolrQueriable<TResult> quariable);
+        SolrResponse<TResult> ExecuteQuery<TResult>(ILinqToSolrQueriable<TResult> quariable);
         void DeleteAll<TResult>();
         void Delete<TResult>(params object[] id);
         void Delete<TResult>(ILinqToSolrQueriable<TResult> quariable);
@@ -25,6 +25,7 @@ namespace LinqToSolr.Query
     {
         public ILinqToSolrService Service { get; }
         internal bool IsEnumerable;
+        internal bool IsGroupping;
         IQueryable query;
         SolrWebClient Client;
         Type returnExecuteType;
@@ -64,6 +65,7 @@ namespace LinqToSolr.Query
             result = null;
             IsEnumerable = typeof(TResult).Name == "IEnumerable`1";
             returnExecuteType = query.GetType().GetGenericArguments()[0];
+            IsGroupping = returnExecuteType.Name == "IGrouping`2";
             return (TResult)Execute(expression);
         }
 
@@ -96,7 +98,7 @@ namespace LinqToSolr.Query
                 request.AddParameter("group.offset", (query.Start > 0 ? query.Start : config.Start).ToString());
                 foreach (var groupField in query.GroupFields)
                 {
-                    request.AddParameter("group.field", groupField);
+                    request.AddParameter("group.field", groupField.Field);
                 }
             }
 
@@ -209,7 +211,7 @@ namespace LinqToSolr.Query
             }
             return request;
         }
-        public virtual ICollection<TResult> ExecuteQuery<TResult>(ILinqToSolrQueriable<TResult> quariable)
+        public virtual SolrResponse<TResult> ExecuteQuery<TResult>(ILinqToSolrQueriable<TResult> quariable)
         {
             quariable = quariable ?? new LinqToSolrQueriable<TResult>(this, null);
             var solrQuery = quariable.Translate();
@@ -218,12 +220,10 @@ namespace LinqToSolr.Query
 
             Service.LastResponseUrl = response.ResponseUri;
             var current = response.Content.FromJson<SolrResponse<TResult>>();
+            Finalize(current, quariable);
 
-            return Finalize(current, quariable);
+            return current;
         }
-
-
-
         public void DeleteAll<TResult>()
         {
             var quariable = new LinqToSolrQueriable<TResult>(this, null);
@@ -270,22 +270,29 @@ namespace LinqToSolr.Query
             {
                 throw new Exception(response.Error.Message);
             }
-            if (response.Response == null)
-                return null;
 
-            result = response.Response.Documents;
-            if (quariable == null)
-                return response.Response.Documents;
 
-            if (quariable.SolrQuery.Select != null)
+            if (IsGroupping && response.Groups != null)
+            {
+                var group = quariable.SolrQuery.GroupFields.First();
+                var func = ((LambdaExpression)group.Expression).Compile();
+                var groupByMethod = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.GroupBy) && x.GetGenericArguments().Count() == 2).First();
+                var allDocs = response.Groups.SelectMany(x => x.Value.Groups.Select(s => s.Documents)).SelectMany(x => x.Documents).Distinct().ToList();
+                result = groupByMethod.MakeGenericMethod(typeof(TResult), group.Type).Invoke(null, new object[] { allDocs, func });
+            }
+
+            if (quariable != null && response.Response?.Documents != null && quariable.SolrQuery.Select != null)
             {
                 var func = ((LambdaExpression)quariable.SolrQuery.Select.Expression).Compile();
                 var selectMethod = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.Select) && x.GetGenericArguments().Count() == 2).First();
-                result = selectMethod.MakeGenericMethod(typeof(TResult), returnExecuteType).Invoke(null, new[] { result, func });
+                result = selectMethod.MakeGenericMethod(typeof(TResult), returnExecuteType).Invoke(null, new object[] { response.Response.Documents, func });
             }
 
-            return response.Response.Documents;
-
+            if (result == null)
+            {
+                result = response.Response?.Documents;
+            }
+            return response.Response?.Documents;
         }
     }
 }

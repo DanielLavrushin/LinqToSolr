@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-
-using LinqToSolr.Data;
-using LinqToSolr.Services;
-using LinqToSolr.Tests.Models;
 
 using NUnit.Framework;
 
@@ -78,7 +73,7 @@ namespace LinqToSolr.Tests
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Any());
-            Assert.IsTrue(result.Count() == take);
+            Assert.IsTrue(result.Count == take);
             Assert.IsTrue(result.First().Name == docs.Skip(skip).Take(take).First().Name, "expected: {0} doc name is {1}", docs.Skip(skip).First().Name, result.First().Name);
             Assert.IsTrue(result.Last().Name == docs.Skip(skip).Take(take).Last().Name, "expected: {0} doc name is {1}", docs.Skip(skip).Last().Name, result.Last().Name);
         }

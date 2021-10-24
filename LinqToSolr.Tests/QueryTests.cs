@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-
-using LinqToSolr.Data;
-using LinqToSolr.Services;
-using LinqToSolr.Tests.Models;
 
 using NUnit.Framework;
 
@@ -116,6 +111,41 @@ namespace LinqToSolr.Tests
             Assert.IsTrue(doc.Any());
             Assert.IsTrue(doc.First().Name.EndsWith(pattern));
         }
+
+        [Test]
+        public void BooleanTest()
+        {
+            factory.DeleteAll();
+            var docsNum = 2;
+            var docs = factory.GenerateDocs(docsNum);
+            docs.First().Locked = true;
+            factory.AddOrUpdate(docs);
+
+            var doc = factory.Reset().Limit(docsNum).Query(x => x.Locked).FirstOrDefault();
+            Assert.IsNotNull(doc);
+            Assert.IsTrue(doc.Locked);
+
+            doc = factory.Reset().Limit(docsNum).Query(x => x.Locked == true).FirstOrDefault();
+            Assert.IsNotNull(doc);
+            Assert.IsTrue(doc.Locked);
+
+            doc = factory.Reset().Limit(docsNum).Query(x => x.Locked.Equals(true)).FirstOrDefault();
+            Assert.IsNotNull(doc);
+            Assert.IsTrue(doc.Locked);
+
+            doc = factory.Reset().Limit(docsNum).Query(x => !x.Locked).FirstOrDefault();
+            Assert.IsNotNull(doc);
+            Assert.IsTrue(!doc.Locked);
+
+            doc = factory.Reset().Limit(docsNum).Query(x => x.Locked != true).FirstOrDefault();
+            Assert.IsNotNull(doc);
+            Assert.IsTrue(!doc.Locked);
+
+            doc = factory.Reset().Limit(docsNum).Query(x => !x.Locked.Equals(true)).FirstOrDefault();
+            Assert.IsNotNull(doc);
+            Assert.IsTrue(!doc.Locked);
+        }
+
 
         [Test]
         public void ArrayContainsTest()

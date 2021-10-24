@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using LinqToSolr.Data;
 using LinqToSolr.Services;
 using LinqToSolr.Tests.Models;
 

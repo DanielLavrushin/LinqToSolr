@@ -4,9 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-using LinqToSolr.Data;
-using LinqToSolr.Query;
-using LinqToSolr.Services;
 using LinqToSolr.Tests.Models;
 
 using NUnit.Framework;

@@ -5,9 +5,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
-using LinqToSolr.Data;
+using LinqToSolr.Models;
 using LinqToSolr.Interfaces;
-using LinqToSolr.Services;
 using LinqToSolr.Helpers;
 
 namespace LinqToSolr.Expressions
@@ -19,8 +18,7 @@ namespace LinqToSolr.Expressions
         private bool _inRangeEqualQuery;
         private ILinqToSolrQuery query;
         private bool _isNotEqual;
-        private Type _elementType;
-        internal bool IsMultiList;
+        readonly Type _elementType;
 
 
         internal LinqToSolrQueryTranslator(ILinqToSolrQuery query)
@@ -135,7 +133,23 @@ namespace LinqToSolr.Expressions
                 Visit(m.Arguments[0]);
                 return m;
             }
-
+            if (m.Method.Name == nameof(object.Equals))
+            {
+                if (m.Object.NodeType == ExpressionType.Equal)
+                {
+                    Visit(((BinaryExpression)m.Object).Left);
+                    sb.Append(":");
+                    Visit(StripQuotes(m.Arguments[0]));
+                    return m;
+                }
+                else if (m.Object.NodeType == ExpressionType.MemberAccess)
+                {
+                    Visit(m.Object);
+                    sb.Append(":");
+                    Visit(StripQuotes(m.Arguments[0]));
+                    return m;
+                }
+            }
             if (m.Method.Name == nameof(string.Contains))
             {
                 if (m.Method.DeclaringType == typeof(string))
@@ -194,7 +208,7 @@ namespace LinqToSolr.Expressions
             {
                 var arr = StripQuotes(m.Arguments[1]);
                 var solrQueryTranslator = new LinqToSolrQueryTranslator(query);
-                query.GroupFields.Add(solrQueryTranslator.Translate(arr));
+                query.GroupFields.Add(new LinqToSolrGrouping(solrQueryTranslator.Translate(arr), arr));
                 Visit(m.Arguments[0]);
 
                 return m;
@@ -358,16 +372,7 @@ namespace LinqToSolr.Expressions
             {
                 if (val is string)
                 {
-
-                    if (IsMultiList)
-                    {
-                        sb.Append(string.Format("({0})", val));
-                    }
-                    else
-                    {
-                        sb.Append(val.ToString().Replace(" ", "\\ "));
-                    }
-
+                    sb.Append(val.ToString().Replace(" ", "\\ "));
                 }
                 else
                 {

@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 using LinqToSolr.Services;
 using LinqToSolr.Query;
-using LinqToSolr.Data;
-using LinqToSolr.Interfaces;
 using System.Linq.Expressions;
 
 namespace LinqToSolr.Tests.Models

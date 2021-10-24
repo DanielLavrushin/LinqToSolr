@@ -1,22 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using LinqToSolr.Helpers.Json;
-using LinqToSolr.Interfaces;
+﻿using System.Collections.Generic;
 
 namespace LinqToSolr.Models
 {
-    internal class ResponseHeader
+    public class ResponseHeader
     {
         [SolrField("responseHeader")]
-        internal int Status { get; set; }
+        public int Status { get; set; }
 
         [SolrField("qtime")]
-        internal int Time { get; set; }
+        public int Time { get; set; }
 
         [SolrField("params")]
-        internal Dictionary<string, string> Query { get; set; }
+        public Dictionary<string, string> Query { get; set; }
     }
 }

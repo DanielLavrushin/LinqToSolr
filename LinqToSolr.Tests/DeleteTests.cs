@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-using LinqToSolr.Data;
 using LinqToSolr.Query;
 using LinqToSolr.Services;
 using LinqToSolr.Tests.Models;
@@ -30,8 +29,8 @@ namespace LinqToSolr.Tests
             factory.Reset().DeleteAll();
 
             var after = factory.Reset().Limit(docsNum).Query(x => x.ParentId == parentId);
-            Assert.IsTrue(after.Count() == 0);
-            Assert.IsTrue(after.Count() == 0, "found different number of docs, found : {after.Count()}");
+            Assert.IsTrue(!after.Any());
+            Assert.IsTrue(!after.Any(), "found different number of docs, found : {after.Count()}");
         }
 
         [Test]

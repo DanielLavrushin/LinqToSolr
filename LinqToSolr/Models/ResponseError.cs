@@ -8,12 +8,12 @@ using LinqToSolr.Interfaces;
 
 namespace LinqToSolr.Models
 {
-    internal class ResponseError
+    public class ResponseError
     {
         [SolrField("msg")]
-        internal string Message { get; set; }
+        public string Message { get; set; }
 
         [SolrField("code")]
-        internal int Code { get; set; }
+        public int Code { get; set; }
     }
 }

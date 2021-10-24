@@ -5,28 +5,26 @@ using LinqToSolr.Helpers.Json;
 using LinqToSolr.Interfaces;
 using LinqToSolr.Models;
 
-namespace LinqToSolr.Data
+namespace LinqToSolr.Models
 {
 
-    internal class SolrResponse
+    public class SolrResponse
     {
-        internal Uri LastServiceUri { get; set; }
-
         [SolrField("responseHeader")]
-        internal ResponseHeader Header { get; set; }
-
-        [SolrField("facet_counts")]
-        internal ResponseFacets Facets { get; set; }
-
+        public ResponseHeader Header { get; set; }
         [SolrField("error")]
-        internal ResponseError Error { get; set; }
+        public ResponseError Error { get; set; }
     }
 
-    internal class SolrResponse<T> : SolrResponse
+    public class SolrResponse<TResult> : SolrResponse
     {
         [SolrField("response")]
-        internal ResponseBody<T> Response { get; set; }
+        public ResponseBody<TResult> Response { get; set; }
 
+        [SolrField("facet_counts")]
+        public ResponseFacets<TResult> Facets { get; set; }
 
+        [SolrField("grouped")]
+        public Dictionary<string, ResponseGroupField<TResult>> Groups { get; set; }
     }
 }

@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 using LinqToSolr.Interfaces;
-using LinqToSolr.Services;
 
-namespace LinqToSolr.Data
+namespace LinqToSolr.Models
 {
     public class LinqToSolrConfiguration : ILinqToSolrConfiguration
     {

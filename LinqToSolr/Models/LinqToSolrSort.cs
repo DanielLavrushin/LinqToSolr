@@ -7,15 +7,13 @@ using LinqToSolr.Helpers.Json;
 using LinqToSolr.Interfaces;
 using LinqToSolr.Helpers;
 
-namespace LinqToSolr.Data
+namespace LinqToSolr.Models
 {
-
     public enum SolrSortTypes
     {
         Asc,
         Desc
     }
-
     public class LinqToSolrSort : ILinqToSolrSort
     {
         public string Field { get; set; }

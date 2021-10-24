@@ -8,15 +8,15 @@ using LinqToSolr.Interfaces;
 
 namespace LinqToSolr.Models
 {
-    internal class ResponseBody<T>
+    public class ResponseBody<T>
     {
         [SolrField("numFound")]
-        internal int Count { get; set; }
+        public int Count { get; set; }
 
         [SolrField("start")]
-        internal int Start { get; set; }
+        public int Start { get; set; }
 
         [SolrField("docs")]
-        internal ICollection<T> Documents { get; set; }
+        public ICollection<T> Documents { get; set; }
     }
 }

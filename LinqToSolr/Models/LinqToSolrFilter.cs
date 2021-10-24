@@ -7,7 +7,7 @@ using LinqToSolr.Helpers.Json;
 using LinqToSolr.Interfaces;
 using LinqToSolr.Helpers;
 
-namespace LinqToSolr.Data
+namespace LinqToSolr.Models
 {
     public class LinqToSolrFilter : ILinqToSolrFilter
     {

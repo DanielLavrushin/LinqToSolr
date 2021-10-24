@@ -27,8 +27,4 @@
 		<PackageLicenseUrl>https://github.com/DanielLavrushin/LinqToSolr/blob/master/LICENSE</PackageLicenseUrl>
 		<RepositoryUrl>https://www.nuget.org/packages/LinqToSolr/</RepositoryUrl>
 	</PropertyGroup>
-
-	<ItemGroup>
-	  <Folder Include="Services\" />
-	</ItemGroup>
 </Project>

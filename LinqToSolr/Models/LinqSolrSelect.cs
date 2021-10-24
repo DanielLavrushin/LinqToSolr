@@ -7,11 +7,11 @@ using System.Reflection;
 using LinqToSolr.Interfaces;
 
 using LinqToSolr.Helpers;
-namespace LinqToSolr.Data
+namespace LinqToSolr.Models
 {
     public class LinqSolrSelect : ILinqSolrSelect
     {
-        public Type Type { get;  }
+        public Type Type { get; }
         public Expression Expression { get; }
 
         static readonly Type[] PredefinedTypes = {

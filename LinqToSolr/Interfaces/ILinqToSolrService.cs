@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Linq;
-using LinqToSolr.Data;
 using LinqToSolr.Query;
 using LinqToSolr.Interfaces;
 

@@ -5,8 +5,8 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
 
-using LinqToSolr.Data;
 using LinqToSolr.Query;
+using LinqToSolr.Models;
 using LinqToSolr.Helpers.Json;
 using LinqToSolr.Interfaces;
 

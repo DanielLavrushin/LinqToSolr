@@ -1,4 +1,4 @@
-﻿using LinqToSolr.Data;
+﻿using LinqToSolr.Models;
 
 namespace LinqToSolr.Interfaces
 {

@@ -2,7 +2,7 @@
 
 using LinqToSolr.Interfaces;
 
-namespace LinqToSolr.Data
+namespace LinqToSolr.Models
 {
     public class LinqToSolrIndexMapping : ILinqToSolrIndexMapping
     {

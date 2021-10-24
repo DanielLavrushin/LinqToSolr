@@ -1,15 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
 using LinqToSolr.Helpers;
-using LinqToSolr.Helpers.Json;
 using LinqToSolr.Interfaces;
 
-namespace LinqToSolr.Data
+namespace LinqToSolr.Models
 {
+    public class LinqToSolrFacet<TResult> : ILinqToSolrFacet<TResult>
+    {
+        public IEnumerable<TResult> Documents => responce.Response.Documents;
+        readonly SolrResponse<TResult> responce;
+        public LinqToSolrFacet(SolrResponse<TResult> responce)
+        {
+            this.responce = responce;
+        }
+
+        public IDictionary<TKey, int> Get<TKey>(Expression<Func<TResult, TKey>> prop)
+        {
+            return responce.Facets.Get(prop);
+        }
+    }
 
     public class LinqToSolrFacet : ILinqToSolrFacet
     {

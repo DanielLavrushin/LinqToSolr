@@ -4,12 +4,9 @@ using System.Linq;
 using System.Text;
 
 using LinqToSolr.Services;
-using LinqToSolr.Query;
-using LinqToSolr.Data;
-using LinqToSolr.Interfaces;
-using System.Linq.Expressions;
 using NUnit.Framework;
 using LinqToSolr.Tests.Models;
+using LinqToSolr.Models;
 
 namespace LinqToSolr.Tests
 {

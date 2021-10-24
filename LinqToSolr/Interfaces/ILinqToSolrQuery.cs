@@ -17,7 +17,7 @@ namespace LinqToSolr.Interfaces
         ICollection<ILinqToSolrFacet> FacetsToIgnore { get; }
         ICollection<ILinqToSolrSort> Sortings { get; }
         ICollection<ILinqToSolrJoiner> JoinFields { get; }
-        ICollection<string> GroupFields { get; }
+        ICollection<ILinqToSolrGrouping> GroupFields { get; }
         ILinqSolrSelect Select { get; set; }
 
         int Take { get; set; }
