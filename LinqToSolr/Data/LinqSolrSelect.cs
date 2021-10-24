@@ -11,8 +11,8 @@ namespace LinqToSolr.Data
 {
     public class LinqSolrSelect : ILinqSolrSelect
     {
-        public Type Type { get; set; }
-        public Expression Expression { get; set; }
+        public Type Type { get;  }
+        public Expression Expression { get; }
 
         static readonly Type[] PredefinedTypes = {
             typeof(Object),

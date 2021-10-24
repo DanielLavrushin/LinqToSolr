@@ -83,7 +83,7 @@ namespace LinqToSolr.Expressions
 
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
-            if (m.Method.Name == "Where" || m.Method.Name == "First" || m.Method.Name == "FirstOrDefault")
+            if (m.Method.Name == nameof(Enumerable.Where) || m.Method.Name == nameof(Enumerable.First) || m.Method.Name == nameof(Enumerable.FirstOrDefault))
             {
                 var lambda = (LambdaExpression)StripQuotes(m.Arguments[1]);
 
@@ -95,14 +95,16 @@ namespace LinqToSolr.Expressions
                 Visit(arr);
                 return m;
             }
-            if (m.Method.Name == "Take")
+
+            if (m.Method.Name == nameof(Enumerable.Take))
             {
                 var takeNumber = (int)((ConstantExpression)m.Arguments[1]).Value;
                 query.Take = takeNumber;
                 Visit(m.Arguments[0]);
                 return m;
             }
-            if (m.Method.Name == "Skip")
+
+            if (m.Method.Name == nameof(Enumerable.Skip))
             {
                 var skipNumber = (int)((ConstantExpression)m.Arguments[1]).Value;
                 query.Start = skipNumber;
@@ -110,8 +112,7 @@ namespace LinqToSolr.Expressions
                 return m;
             }
 
-
-            if (m.Method.Name == "OrderBy" || m.Method.Name == "ThenBy")
+            if (m.Method.Name == nameof(Enumerable.OrderBy) || m.Method.Name == nameof(Enumerable.ThenBy))
             {
                 var lambda = (LambdaExpression)StripQuotes(m.Arguments[1]);
 
@@ -120,7 +121,7 @@ namespace LinqToSolr.Expressions
                 return m;
             }
 
-            if (m.Method.Name == "OrderByDescending" || m.Method.Name == "ThenByDescending")
+            if (m.Method.Name == nameof(Enumerable.OrderByDescending) || m.Method.Name == nameof(Enumerable.ThenByDescending))
             {
                 var lambda = (LambdaExpression)StripQuotes(m.Arguments[1]);
                 query.Sortings.Add(LinqToSolrSort.Create(lambda.Body, SolrSortTypes.Desc));
@@ -128,14 +129,14 @@ namespace LinqToSolr.Expressions
                 return m;
             }
 
-            if (m.Method.Name == "Select")
+            if (m.Method.Name == nameof(Enumerable.Select))
             {
                 query.Select = new LinqSolrSelect(StripQuotes(m.Arguments[1]));
                 Visit(m.Arguments[0]);
                 return m;
             }
 
-            if (m.Method.Name == "Contains")
+            if (m.Method.Name == nameof(string.Contains))
             {
                 if (m.Method.DeclaringType == typeof(string))
                 {
@@ -145,10 +146,10 @@ namespace LinqToSolr.Expressions
                 }
                 else
                 {
-                    var arr = (ConstantExpression)StripQuotes(m.Arguments[0]);
+                    var arr = StripQuotes(m.Arguments[0]);
                     Expression lambda;
 
-                    if (m.Arguments.Count == 2)
+                    if (m.Arguments[0].NodeType == ExpressionType.Constant)
                     {
                         lambda = StripQuotes(m.Arguments[1]);
                         Visit(lambda);
@@ -157,11 +158,9 @@ namespace LinqToSolr.Expressions
                     }
                     else
                     {
-                        var newExpr = Expression.Equal(m.Object, m.Arguments[0]);
-                        var expr = new LinqToSolrQueryTranslator(query);
-                        expr.IsMultiList = true;
-                        var multilistfq = expr.Translate(newExpr);
-                        sb.AppendFormat("{0}", multilistfq);
+                        Visit(m.Arguments[0]);
+                        sb.Append(":");
+                        Visit(StripQuotes(m.Arguments[1]));
                     }
 
 
@@ -169,7 +168,7 @@ namespace LinqToSolr.Expressions
                 }
             }
 
-            if (m.Method.Name == "StartsWith")
+            if (m.Method.Name == nameof(string.StartsWith))
             {
                 if (m.Method.DeclaringType == typeof(string))
                 {
@@ -179,7 +178,7 @@ namespace LinqToSolr.Expressions
                     return m;
                 }
             }
-            if (m.Method.Name == "EndsWith")
+            if (m.Method.Name == nameof(string.EndsWith))
             {
                 if (m.Method.DeclaringType == typeof(string))
                 {
@@ -191,7 +190,7 @@ namespace LinqToSolr.Expressions
                 }
             }
 
-            if (m.Method.Name == "GroupBy")
+            if (m.Method.Name == nameof(Enumerable.GroupBy))
             {
                 var arr = StripQuotes(m.Arguments[1]);
                 var solrQueryTranslator = new LinqToSolrQueryTranslator(query);

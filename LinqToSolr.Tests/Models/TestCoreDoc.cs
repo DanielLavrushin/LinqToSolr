@@ -5,22 +5,31 @@ namespace LinqToSolr.Tests.Models
 {
     public class TestCoreDoc
     {
-        [SolrField("_group")]
+        [SolrField("id")]
         public Guid Id { get; set; }
 
-        [SolrField("_name")]
+        [SolrField("name")]
         public string Name { get; set; }
 
-        [SolrField("_parent")]
+        [SolrField("city")]
+        public string City { get; set; }
+
+        [SolrField("text")]
+        public string Text { get; set; }
+
+        [SolrField("lock")]
+        public bool Locked { get; set; }
+
+        [SolrField("parentid")]
         public Guid ParentId { get; set; }
 
-        [SolrField("site_sm")]
+        [SolrField("cities")]
         public string[] Sites { get; set; }
 
-        [SolrField("_path")]
+        [SolrField("path")]
         public Guid[] Pathes { get; set; }
 
-        [SolrField("_indextimestamp")]
+        [SolrField("time")]
         public DateTime Time { get; set; }
 
         internal static TestCoreDoc New()

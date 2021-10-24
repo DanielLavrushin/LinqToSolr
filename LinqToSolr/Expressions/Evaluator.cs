@@ -110,7 +110,11 @@ namespace LinqToSolr.Expressions
                 return _candidates;
 
             }
-
+            protected override Expression VisitMemberInit(MemberInitExpression init)
+            {
+                _cannotBeEvaluated = true;
+                return base.Visit(init.NewExpression);
+            }
 
 #if NET35
             protected override Expression Visit(Expression expression)

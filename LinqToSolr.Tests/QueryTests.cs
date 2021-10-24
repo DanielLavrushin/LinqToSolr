@@ -105,17 +105,46 @@ namespace LinqToSolr.Tests
         [Test]
         public void EndsWithTest()
         {
+            var docsNum = 100;
+            var pattern = "99";
+            var expected = factory.GenerateDocs(docsNum);
+            factory.AddOrUpdate(expected);
+
+            var doc = factory.Reset().Limit(docsNum).Query(x => x.Name.EndsWith(pattern));
+
+            Assert.IsNotNull(doc);
+            Assert.IsTrue(doc.Any());
+            Assert.IsTrue(doc.First().Name.EndsWith(pattern));
+        }
+
+        [Test]
+        public void ArrayContainsTest()
+        {
+            var docsNum = 10;
+            var expected = factory.GenerateDocs(docsNum);
+            var parentId = expected.First().ParentId;
+            factory.AddOrUpdate(expected);
+            var cities = factory.Cities.Take(4).ToArray();
+            var doc = factory.Reset().Limit(docsNum).Query(x => cities.Contains(x.City));
+
+            Assert.IsNotNull(doc);
+            Assert.IsTrue(doc.Count() == docsNum, $"expected: {docsNum}, got : {doc.Count() }");
+        }
+
+        [Test]
+        public void MultiValueFieldTest()
+        {
+            string pattern = "Copenhagen";
             var docsNum = 10;
             var expected = factory.GenerateDocs(docsNum);
             factory.AddOrUpdate(expected);
 
-            var doc = factory.Reset().Limit(docsNum).Query(x => x.Name.EndsWith("Doc 9"));
+            var docs = factory.Reset().Limit(docsNum).Query(x => x.Sites.Contains(pattern));
 
-            Assert.IsNotNull(doc);
-            Assert.IsTrue(doc.Any());
-            Assert.IsTrue(doc.First().Name.EndsWith("Doc 9"));
+            Assert.IsNotNull(docs);
+            Assert.IsTrue(docs.Any());
+            Assert.IsTrue(docs.All(x => x.Sites.Contains(pattern)));
         }
-
 
         [Test]
         public void QueryByTimeTest()

@@ -14,6 +14,8 @@ namespace LinqToSolr.Tests.Models
     public class SolrServiceFactory
     {
 
+        public readonly string[] Cities = new string[] { "Copenhagen", "Moscow", "Paris", "New York", "Stockoholm", "Saint Petersburg", "San Francisco", "Deli" };
+
         public ILinqToSolrService solr;
         ILinqToSolrQueriable<TestCoreDoc> quaryable;
         int docsNum = 10;
@@ -36,6 +38,7 @@ namespace LinqToSolr.Tests.Models
 
         public TestCoreDoc[] GenerateDocs(int number)
         {
+            var rnd = new Random();
             var parentId = Guid.NewGuid();
             var docs = new List<TestCoreDoc>();
             for (int i = 0; i < number; i++)
@@ -43,9 +46,11 @@ namespace LinqToSolr.Tests.Models
                 docs.Add(new TestCoreDoc
                 {
                     Id = Guid.NewGuid(),
+                    City = Cities[0],
                     ParentId = parentId,
+                    Sites = Cities,
                     Time = DateTime.Now,
-                    Name = "TestCoreDoc " + i
+                    Name = $"{nameof(TestCoreDoc)} {i}"
                 });
             }
             return docs.ToArray();

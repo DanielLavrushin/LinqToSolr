@@ -47,6 +47,23 @@ namespace LinqToSolr.Tests
             Assert.IsTrue(result.First().Time.Year == date.Year, $"expected: {date.Year}, got : {result.First().Time.Year}");
         }
 
+        [Test]
+        public void OrderThenByTest()
+        {
+            factory.DeleteAll();
+            var docs = factory.GenerateDocs(100);
+            foreach (var d in docs.Take(50))
+                d.City = factory.Cities[1];
+            var date = new DateTime(1984, 1, 1);
+            docs.Last().Time = date;
+
+            factory.AddOrUpdate(docs);
+
+            var result = factory.Reset().Queriable().OrderBy(x => x.City).ThenByDescending(x => x.Name).ToList();
+
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Any());
+        }
 
         [Test]
         public void SkipTakleTest()

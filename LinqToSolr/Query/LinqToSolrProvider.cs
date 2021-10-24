@@ -27,6 +27,8 @@ namespace LinqToSolr.Query
         internal bool IsEnumerable;
         IQueryable query;
         SolrWebClient Client;
+        Type returnExecuteType;
+        object result;
 
         public LinqToSolrProvider(ILinqToSolrService service)
         {
@@ -50,18 +52,22 @@ namespace LinqToSolr.Query
         {
             var elementType = TypeSystem.GetElementType(((MethodCallExpression)expression).Arguments[0].Type);
             var providerQuery = GetType().GetMethod("ExecuteQuery").MakeGenericMethod(new[] { elementType });
-            var result = providerQuery.Invoke(this, new[] { query });
+
+            query = returnExecuteType == elementType ? query : (IQueryable)Activator.CreateInstance(typeof(LinqToSolrQueriable<>).MakeGenericType(elementType), new object[] { this, expression });
+            providerQuery.Invoke(this, new[] { query });
             return IsEnumerable ? result : ((IEnumerable)result).Cast<object>().FirstOrDefault();
         }
 
 
         public TResult Execute<TResult>(Expression expression)
         {
+            result = null;
             IsEnumerable = typeof(TResult).Name == "IEnumerable`1";
+            returnExecuteType = query.GetType().GetGenericArguments()[0];
             return (TResult)Execute(expression);
         }
 
-        internal SolrWebRequest PrepareQueryRequest<TResult>(ILinqToSolrQuery query)
+        private SolrWebRequest PrepareQueryRequest<TResult>(ILinqToSolrQuery query)
         {
             var config = Service.Configuration;
             string path = string.Format("/{0}/select", config.GetIndex(typeof(TResult)));
@@ -69,7 +75,7 @@ namespace LinqToSolr.Query
 
             request.AddParameter("q", "*");
             request.AddParameter("wt", "json");
-            request.AddParameter("indent", "true");
+            request.AddParameter("indent", "false");
             request.AddParameter("rows", (query.Take > 0 ? query.Take : config.Take).ToString());
             request.AddParameter("start", (query.Start > 0 ? query.Start : config.Start).ToString());
 
@@ -113,7 +119,7 @@ namespace LinqToSolr.Query
 
             if (query.Sortings.Any())
             {
-                request.AddParameter("sort", string.Join(", ", query.Sortings.Select(x =>
+                request.AddParameter("sort", string.Join(", ", query.Sortings.Reverse().Select(x =>
                         string.Format("{0} {1}", x.Field, x.Order == SolrSortTypes.Desc ? "DESC" : "ASC")).ToArray()));
             }
 
@@ -212,10 +218,12 @@ namespace LinqToSolr.Query
 
             Service.LastResponseUrl = response.ResponseUri;
             var current = response.Content.FromJson<SolrResponse<TResult>>();
-            Finalize(current);
 
-            return current.Response.Documents;
+            return Finalize(current, quariable);
         }
+
+
+
         public void DeleteAll<TResult>()
         {
             var quariable = new LinqToSolrQueriable<TResult>(this, null);
@@ -226,7 +234,7 @@ namespace LinqToSolr.Query
             var request = PrepareDeleteRequest<TResult>(solrQuery);
             var response = Client.Execute(request);
             var current = response.Content.FromJson<SolrResponse<TResult>>();
-            Finalize(current);
+            Finalize(current, quariable);
         }
         public void Delete<TResult>(ILinqToSolrQueriable<TResult> quariable)
         {
@@ -236,7 +244,7 @@ namespace LinqToSolr.Query
             var request = PrepareDeleteRequest<TResult>(solrQuery);
             var response = Client.Execute(request);
             var current = response.Content.FromJson<SolrResponse<TResult>>();
-            Finalize(current);
+            Finalize(current, quariable);
         }
         public void Delete<TResult>(params object[] id)
         {
@@ -256,14 +264,28 @@ namespace LinqToSolr.Query
             return document;
         }
 
-
-        private void Finalize<TResult>(SolrResponse<TResult> response)
+        private ICollection<TResult> Finalize<TResult>(SolrResponse<TResult> response, ILinqToSolrQueriable<TResult> quariable = null)
         {
-            Console.WriteLine($"Time: {response.Header.Time}");
             if (response.Error != null)
             {
                 throw new Exception(response.Error.Message);
             }
+            if (response.Response == null)
+                return null;
+
+            result = response.Response.Documents;
+            if (quariable == null)
+                return response.Response.Documents;
+
+            if (quariable.SolrQuery.Select != null)
+            {
+                var func = ((LambdaExpression)quariable.SolrQuery.Select.Expression).Compile();
+                var selectMethod = typeof(Enumerable).GetMethods().Where(x => x.Name == nameof(Enumerable.Select) && x.GetGenericArguments().Count() == 2).First();
+                result = selectMethod.MakeGenericMethod(typeof(TResult), returnExecuteType).Invoke(null, new[] { result, func });
+            }
+
+            return response.Response.Documents;
+
         }
     }
 }
