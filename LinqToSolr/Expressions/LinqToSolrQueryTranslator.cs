@@ -8,6 +8,7 @@ using System.Text;
 using LinqToSolr.Models;
 using LinqToSolr.Interfaces;
 using LinqToSolr.Helpers;
+using LinqToSolr.Query;
 
 namespace LinqToSolr.Expressions
 {
@@ -18,6 +19,7 @@ namespace LinqToSolr.Expressions
         private bool _inRangeEqualQuery;
         private ILinqToSolrQuery query;
         private bool _isNotEqual;
+        public bool isMultiList;
         readonly Type _elementType;
 
 
@@ -155,15 +157,18 @@ namespace LinqToSolr.Expressions
                 if (m.Method.DeclaringType == typeof(string))
                 {
                     var str = string.Format("*{0}*", ((ConstantExpression)StripQuotes(m.Arguments[0])).Value);
+
+
                     Visit(BinaryExpression.Equal(m.Object, ConstantExpression.Constant(str)));
+
                     return m;
                 }
                 else
                 {
-                    var arr = StripQuotes(m.Arguments[0]);
+                    var arr = (ConstantExpression)StripQuotes(m.Arguments[0]);
                     Expression lambda;
 
-                    if (m.Arguments[0].NodeType == ExpressionType.Constant)
+                    if (m.Arguments.Count == 2)
                     {
                         lambda = StripQuotes(m.Arguments[1]);
                         Visit(lambda);
@@ -172,9 +177,12 @@ namespace LinqToSolr.Expressions
                     }
                     else
                     {
-                        Visit(m.Arguments[0]);
-                        sb.Append(":");
-                        Visit(StripQuotes(m.Arguments[1]));
+                        var newExpr = Expression.Equal(m.Object, m.Arguments[0]);
+                        var expr = new LinqToSolrQueryTranslator(query);
+                        expr.isMultiList = true;
+                        var multilistfq = expr.Translate(newExpr);
+                        sb.AppendFormat("{0}", multilistfq);
+
                     }
 
 
@@ -241,16 +249,21 @@ namespace LinqToSolr.Expressions
 
         protected override Expression VisitBinary(BinaryExpression b)
         {
-            sb.Append("(");
 
             if (b.Left is ConstantExpression)
             {
-                throw new System.Data.InvalidExpressionException("Failed to parse expression. Ensure the Solr fields are always come in the left part of comparison.");
+                throw new Exception("Failed to parse expression. Ensure the Solr fields are always come in the left part of comparison.");
             }
-            if (b.NodeType == ExpressionType.NotEqual)
+
+            _isNotEqual = (b.NodeType == ExpressionType.NotEqual);
+
+            if (!_isNotEqual && b.Right?.NodeType == ExpressionType.Constant)
             {
-                _isNotEqual = true;
+                var ce = (ConstantExpression)b.Right;
+                _isNotEqual = ce.Value == null;
             }
+
+            sb.Append(_isNotEqual ? "-(" : "(");
             Visit(b.Left);
 
             if (_isNotEqual && b.Left.NodeType == ExpressionType.Call)
@@ -259,6 +272,7 @@ namespace LinqToSolr.Expressions
                 sb.Append(")");
                 return b;
             }
+
 
             switch (b.NodeType)
             {
@@ -282,17 +296,10 @@ namespace LinqToSolr.Expressions
                     sb.Append(":[");
                     _inRangeQuery = true;
                     break;
+
                 case ExpressionType.LessThanOrEqual:
                     sb.Append(":[*");
                     _inRangeQuery = true;
-                    break;
-                case ExpressionType.GreaterThan:
-                    sb.Append(":{");
-                    _inRangeEqualQuery = true;
-                    break;
-                case ExpressionType.LessThan:
-                    sb.Append(":{*");
-                    _inRangeEqualQuery = true;
                     break;
 
                 default:
@@ -302,12 +309,10 @@ namespace LinqToSolr.Expressions
             }
 
             Visit(b.Right);
-
             sb.Append(")");
 
             return b;
         }
-
 
         protected override Expression VisitConstant(ConstantExpression c)
         {
@@ -320,7 +325,7 @@ namespace LinqToSolr.Expressions
             else
             {
                 //handle in range query
-                if (_inRangeQuery || _inRangeEqualQuery)
+                if (_inRangeQuery)
                 {
                     if (sb[sb.Length - 1] == '*')
                     {
@@ -332,7 +337,7 @@ namespace LinqToSolr.Expressions
                         AppendConstValue(c.Value);
                         sb.Append(" TO *");
                     }
-                    sb.Append(_inRangeEqualQuery ? "}" : "]");
+                    sb.Append("]");
                     _inRangeQuery = false;
                 }
                 else
@@ -346,53 +351,81 @@ namespace LinqToSolr.Expressions
 
         private void AppendConstValue(object val)
         {
+            if (val == null)
+            {
+                sb.Append(string.Format("(*) AND *:*", val));
+                return;
+            }
+
+
 #if NETSTANDARD
             var isArray = val.GetType().GetTypeInfo().IsArray;
 #else
             var isArray = val.GetType().GetInterface("IEnumerable`1") != null;
 #endif
-            var format = !string.IsNullOrEmpty(formatValue) ? "{0:" + formatValue + "}" : "{0}";
             //Set date format of Solr 1995-12-31T23:59:59.999Z
             if (val.GetType() == typeof(DateTime))
             {
-                sb.Append('"');
-                sb.Append(((DateTime)val).ToString("yyyy-MM-ddThh:mm:ss.fffZ"));
-                sb.Append('"');
+                sb.Append(((DateTime)val).ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
             }
             else if (!(val is string) && isArray)
             {
-
                 var array = (IEnumerable)val;
-                var arrstring = string.Join(" OR ",
-                    array.Cast<object>().Select(x => string.Format("\"" + format + "\"", x)).ToArray());
+                var arrstring = string.Join(" OR ", array.Cast<object>().Select(x => string.Format("\"{0}\"", x)).ToArray());
                 sb.AppendFormat(": ({0})", arrstring);
 
             }
             else
             {
+
+
                 if (val is string)
                 {
-                    sb.Append(val.ToString().Replace(" ", "\\ "));
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(formatValue))
+                    val = val.ToString() != string.Empty ? val : "\"\"";
+                    if (isMultiList)
                     {
-                        sb.AppendFormat(format, val);
+                        sb.Append(string.Format("({0})", val));
                     }
                     else
                     {
-                        sb.Append(val);
-
+                        sb.Append(val.ToString().Replace(" ", "\\ "));
                     }
+
+                }
+                else
+                {
+                    sb.Append(val);
+
                 }
             }
-            formatValue = null;
         }
 
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
         {
             return base.VisitMemberAssignment(node);
+        }
+        internal string GetFieldName(MemberInfo member)
+        {
+
+            var attributeFieldName = member.GetCustomAttribute<SolrFieldAttribute>()?.PropertyName
+                                     ?? member.Name;
+
+            var fieldName = !string.IsNullOrEmpty(attributeFieldName)
+                ? attributeFieldName
+                : member.Name;
+
+            if (query.FacetsToIgnore.Any())
+            {
+                var facetToIgnoreName =
+                    query.FacetsToIgnore.FirstOrDefault(x => x.Field == fieldName);
+                if (!string.IsNullOrEmpty(facetToIgnoreName?.Field))
+                {
+                    return string.Format("{{!tag={0}}}{1}", facetToIgnoreName.Field, fieldName);
+                }
+            }
+
+            return fieldName;
+
         }
 
         string formatValue = null;
@@ -402,28 +435,21 @@ namespace LinqToSolr.Expressions
         protected override Expression VisitMember(MemberExpression m)
 #endif
         {
-            if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
+            if (m.Expression != null && (m.Expression.NodeType == ExpressionType.Parameter || m.Expression.NodeType == ExpressionType.Convert || m.Expression.NodeType == ExpressionType.ConvertChecked))
             {
 
-                var fieldName = GetFieldName(m.Member, out formatValue);
-
-                sb.Append(_isNotEqual ? string.Format("-{0}", fieldName) : fieldName);
+                var fieldName = GetFieldName(m.Member);
+                sb.Append(fieldName);
                 return m;
             }
+
             if (m.Expression != null)
             {
-                if (m.Expression.NodeType == ExpressionType.Constant)
+                if (m.Expression != null && (m.Expression.NodeType == ExpressionType.Constant || m.Expression.NodeType == ExpressionType.MemberAccess))
                 {
                     var ce = (ConstantExpression)m.Expression;
-                    if (!string.IsNullOrEmpty(formatValue))
-                    {
-                        sb.AppendFormat("{0:" + formatValue + "}", ce.Value);
-                    }
-                    else
-                    {
-                        sb.Append(ce.Value);
-                    }
-                    formatValue = null;
+                    sb.Append(ce.Value);
+                    return m;
                 }
                 else if (m.Expression.NodeType == ExpressionType.MemberAccess)
                 {

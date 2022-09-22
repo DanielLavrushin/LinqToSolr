@@ -152,7 +152,8 @@ namespace LinqToSolr.Helpers.Json
             if (type.GetTypeInfo().IsPrimitive)
             {
                 var convert = TypeDescriptor.GetConverter(type);
-                var result = convert.ConvertFromString(json);
+                if (string.IsNullOrEmpty(json)) return null;
+                var result = convert.ConvertFromString(json?.Replace("\"", ""));
                 return result;
             }
             if (type == typeof(decimal))
