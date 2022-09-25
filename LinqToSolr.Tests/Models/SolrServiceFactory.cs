@@ -5,6 +5,7 @@ using System.Linq;
 using LinqToSolr.Services;
 using LinqToSolr.Query;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace LinqToSolr.Tests.Models
 {
@@ -63,9 +64,9 @@ namespace LinqToSolr.Tests.Models
         {
             return quaryable;
         }
-        public IEnumerable<TestCoreDoc> AddOrUpdate(params TestCoreDoc[] docs)
+        public async Task<IEnumerable<TestCoreDoc>> AddOrUpdate(params TestCoreDoc[] docs)
         {
-            solr.AddOrUpdate(docs);
+            await solr.AddOrUpdate(docs);
             return docs;
         }
 

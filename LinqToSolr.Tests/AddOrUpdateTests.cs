@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 using LinqToSolr.Services;
 using LinqToSolr.Tests.Models;
@@ -16,14 +17,14 @@ namespace LinqToSolr.Tests
 
 
         [Test]
-        public void AddDocuments()
+        public async Task AddDocuments()
         {
             var docsNum = 1000;
             var docs = factory.GenerateDocs(docsNum);
             var parentId = docs.First().ParentId;
             Log($"parent id: {parentId}");
 
-            factory.AddOrUpdate(docs.ToArray());
+            await factory.AddOrUpdate(docs.ToArray());
 
             var result = factory.Limit(docsNum).Query(x => x.ParentId == parentId);
 

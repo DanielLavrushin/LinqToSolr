@@ -18,7 +18,7 @@ namespace LinqToSolr.Tests
         [OneTimeSetUp]
         public virtual void OneTimeSetUp()
         {
-            var config = new LinqToSolrConfiguration("https://localhost:9193/solr")
+            var config = new LinqToSolrConfiguration("http://192.168.1.99:81/solr")
                 .MapIndexFor<TestCoreDoc>("testcore");
             solr = new LinqToSolrService(config);
             factory = new SolrServiceFactory(solr);

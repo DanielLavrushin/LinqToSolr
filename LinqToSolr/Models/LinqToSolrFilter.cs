@@ -41,7 +41,11 @@ namespace LinqToSolr.Models
         public static LinqToSolrFilter Create(LambdaExpression fieldExp, params object[] values)
         {
             var fb = fieldExp.Body as MemberExpression;
-
+            if (fieldExp.Body is UnaryExpression)
+            {
+                var ufb = ((UnaryExpression)fieldExp.Body);
+                fb = ufb.Operand as MemberExpression;
+            }
             var o = new LinqToSolrFilter
             {
                 Field = fb.Member.GetSolrFieldName(),

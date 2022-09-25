@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 using LinqToSolr.Helpers;
 using LinqToSolr.Interfaces;
@@ -9,7 +10,6 @@ namespace LinqToSolr.Models
 {
     public class LinqToSolrFacet<TResult> : ILinqToSolrFacet<TResult>
     {
-        public IEnumerable<TResult> Documents => responce.Response.Documents;
         readonly SolrResponse<TResult> responce;
         public LinqToSolrFacet(SolrResponse<TResult> responce)
         {
@@ -32,6 +32,12 @@ namespace LinqToSolr.Models
             var o = new LinqToSolrFacet { Property = fieldExp };
 
             var fb = fieldExp.Body as MemberExpression;
+            if (fieldExp.Body is UnaryExpression)
+            {
+                var ufb = ((UnaryExpression)fieldExp.Body);
+                fb = ufb.Operand as MemberExpression;
+            }
+
             if (fb != null)
             {
                 o.Field = fb.Member.GetSolrFieldName();

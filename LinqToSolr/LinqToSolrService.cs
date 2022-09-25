@@ -9,6 +9,7 @@ using LinqToSolr.Query;
 using LinqToSolr.Models;
 using LinqToSolr.Helpers.Json;
 using LinqToSolr.Interfaces;
+using System.Threading.Tasks;
 
 namespace LinqToSolr.Services
 {
@@ -38,18 +39,21 @@ namespace LinqToSolr.Services
         {
             return new LinqToSolrQueriable<T>(Provider, null);
         }
-
-        public IEnumerable<TObject> AddOrUpdate<TObject>(IEnumerable<TObject> documents, bool softCommit = false)
+        public async Task<IEnumerable<TObject>> AddOrUpdate<TObject>(params TObject[] documents)
         {
-            if (documents == null)
-                throw new ArgumentNullException(nameof(documents));
+            return await AddOrUpdate(false, documents);
+        }
+        public async Task<IEnumerable<TObject>> AddOrUpdate<TObject>(bool softCommit = false, params TObject[] document)
+        {
+            if (document == null || !document.Any())
+                throw new ArgumentNullException(nameof(document));
 
-            return Provider.AddOrUpdate(documents, softCommit);
+            return await Provider.AddOrUpdate(softCommit, document);
         }
 
-        public void DeleteAll<TObject>(bool softCommit = false)
+        public async Task DeleteAll<TObject>(bool softCommit = false)
         {
-            Provider.DeleteAll<TObject>();
+            await Provider.DeleteAll<TObject>();
         }
 
         public void Dispose()

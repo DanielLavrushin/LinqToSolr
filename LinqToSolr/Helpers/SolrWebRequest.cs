@@ -3,8 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 
+#if NET5_0 || NET6_0 || NETCOREAPP
+using System.Net.Http;
+#endif
+
+using System.Text;
+using System.Threading.Tasks;
 
 namespace LinqToSolr
 {
@@ -30,7 +35,6 @@ namespace LinqToSolr
 
     public class SolrWebRequest
     {
-
         public SolrWebMethod Method { get; set; }
         public string ActionUrl { get; set; }
         public string Body { get; set; }
@@ -47,7 +51,6 @@ namespace LinqToSolr
         {
             Parameters.Add(new SolrWebParameter(name, value));
         }
-
     }
 
     public class SolrWebResponse
@@ -71,16 +74,21 @@ namespace LinqToSolr
             _endpoint = endPoint;
         }
 
-        public SolrWebResponse Execute(SolrWebRequest request)
-        {
 
+        public async Task<SolrWebResponse> Execute(SolrWebRequest request)
+        {
             var paramStr = string.Join("&", request.Parameters.Select(x => string.Format("{0}={1}", x.Name, x.Value)).ToArray());
             _endpoint = _endpoint.EndsWith("/") ? _endpoint.TrimEnd('/') : _endpoint;
             request.ActionUrl = request.ActionUrl.StartsWith("/") ? request.ActionUrl.TrimStart('/') : request.ActionUrl;
-            paramStr = string.Format("{0}/{1}?{2}", _endpoint, request.ActionUrl, paramStr.Substring(0, paramStr.Length));
+            var url = string.Format("{0}/{1}?{2}", _endpoint, request.ActionUrl, (request.Method != SolrWebMethod.GET && string.IsNullOrEmpty(request.Body)) ? null : paramStr.Substring(0, paramStr.Length));
             var response = new SolrWebResponse();
-            response.ResponseUri = new Uri(paramStr);
-
+            response.ResponseUri = new Uri(url);
+            var contentType = "application/json";
+            if (request.Method != SolrWebMethod.GET && string.IsNullOrEmpty(request.Body))
+            {
+                request.Body = string.IsNullOrEmpty(request.Body) ? paramStr : request.Body;
+                contentType = "application/x-www-form-urlencoded";
+            }
 
 #if NETSTANDARD
             var client = new System.Net.Http.HttpClient();
@@ -89,22 +97,48 @@ namespace LinqToSolr
 
             if (request.Method == SolrWebMethod.GET)
             {
-                var webResponse = client.GetAsync(paramStr).Result;
+                var webResponse = client.GetAsync(url).Result;
                 response.Content = webResponse.Content.ReadAsStringAsync().Result;
                 response.StatusCode = webResponse.StatusCode;
             }
             else
             {
-                var content = new System.Net.Http.StringContent(request.Body, Encoding.UTF8, "application/json");
-                var webResponse = client.PostAsync(paramStr, content).Result;
-                //var webResponse = client.GetAsync(paramStr).Result;
+                var content = new System.Net.Http.StringContent(request.Body, Encoding.UTF8, contentType);
+                var webResponse = client.PostAsync(url, content).Result;
+                //var webResponse = client.GetAsync(url).Result;
                 response.Content = webResponse.Content.ReadAsStringAsync().Result;
                 response.StatusCode = webResponse.StatusCode;
             }
 #else
 
+#if NET5_0 || NET6_0 || NETCOREAPP
 
-            var webRequest = (HttpWebRequest)WebRequest.Create(paramStr);
+            var clientReq = new HttpRequestMessage(request.Method == SolrWebMethod.GET ? HttpMethod.Get : HttpMethod.Post, url)
+            {
+
+                Content = !string.IsNullOrEmpty(request.Body) ? new StringContent(request.Body, Encoding.UTF8, contentType) : null
+            };
+            var client = new HttpClient();
+
+            try
+            {
+                var clientResp = await client.SendAsync(clientReq);
+                response.Content = await clientResp.Content.ReadAsStringAsync();
+                response.StatusCode = clientResp.StatusCode;
+            }
+            catch (Exception e)
+            {
+                response.Content = e.Message;
+                Console.WriteLine(response.Content);
+            }
+            finally
+            {
+                response.ResponseUri = new Uri(url);
+            }
+
+#else
+            var webRequest = (HttpWebRequest)WebRequest.Create(url);
+
             if (request.Method == SolrWebMethod.GET)
             {
                 try
@@ -115,7 +149,7 @@ namespace LinqToSolr
 
                         using (var responseStream = webResponse.GetResponseStream())
                         {
-                            using (var reader = new System.IO.StreamReader(responseStream, encoding))
+                            using (var reader = new StreamReader(responseStream, encoding))
                             {
                                 response.Content = reader.ReadToEnd();
                                 response.StatusCode = webResponse.StatusCode;
@@ -143,7 +177,7 @@ namespace LinqToSolr
             else
             {
                 webRequest.Method = "POST";
-                webRequest.ContentType = "application/json";
+                webRequest.ContentType = contentType;
                 webRequest.ContentLength = request.Body.Length;
                 var data = Encoding.UTF8.GetBytes(request.Body);
                 using (var stream = webRequest.GetRequestStream())
@@ -173,6 +207,7 @@ namespace LinqToSolr
                     }
                 }
             }
+#endif
 #endif
             return response;
         }

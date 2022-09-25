@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using System.Linq;
 using LinqToSolr.Query;
 using LinqToSolr.Interfaces;
+using System.Threading.Tasks;
 
 namespace LinqToSolr.Services
 {
@@ -15,8 +16,9 @@ namespace LinqToSolr.Services
         IQueryable<TResult> AsQueryable<TResult>();
 
 
-        void DeleteAll<TObject>(bool softCommit = false);
-        IEnumerable<TResult> AddOrUpdate<TResult>(IEnumerable<TResult> document, bool softCommit = false);
+        Task DeleteAll<TObject>(bool softCommit = false);
+        Task<IEnumerable<TResult>> AddOrUpdate<TResult>(params TResult[] document);
+        Task<IEnumerable<TResult>> AddOrUpdate<TResult>(bool softCommit = false, params TResult[] document);
 
     }
 }

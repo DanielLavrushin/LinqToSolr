@@ -9,17 +9,18 @@ using LinqToSolr.Models;
 using System.Collections.Generic;
 using LinqToSolr.Interfaces;
 using LinqToSolr.Helpers.Json;
+using System.Threading.Tasks;
 
 namespace LinqToSolr.Query
 {
     public interface ILinqToSolrProvider : IQueryProvider
     {
         ILinqToSolrService Service { get; }
-        SolrResponse<TResult> ExecuteQuery<TResult>(ILinqToSolrQueriable<TResult> quariable);
-        void DeleteAll<TResult>();
-        void Delete<TResult>(params object[] id);
-        void Delete<TResult>(ILinqToSolrQueriable<TResult> quariable);
-        IEnumerable<TResult> AddOrUpdate<TResult>(IEnumerable<TResult> document, bool softCommit = false);
+        Task<SolrResponse<TResult>> ExecuteQuery<TResult>(ILinqToSolrQueriable<TResult> quariable);
+        Task DeleteAll<TResult>();
+        Task Delete<TResult>(params object[] id);
+        Task Delete<TResult>(ILinqToSolrQueriable<TResult> quariable);
+        Task<IEnumerable<TResult>> AddOrUpdate<TResult>(bool softCommit = false, params TResult[] document);
     }
     public class LinqToSolrProvider : ILinqToSolrProvider
     {
@@ -55,7 +56,10 @@ namespace LinqToSolr.Query
             var providerQuery = GetType().GetMethod("ExecuteQuery").MakeGenericMethod(new[] { elementType });
 
             query = returnExecuteType == elementType ? query : (IQueryable)Activator.CreateInstance(typeof(LinqToSolrQueriable<>).MakeGenericType(elementType), new object[] { this, expression });
-            providerQuery.Invoke(this, new[] { query });
+            var task = (Task)providerQuery.Invoke(this, new[] { query });
+            task.ConfigureAwait(false);
+            var resultProperty = task.GetType().GetProperty("Result");
+            var r = resultProperty.GetValue(task);
             return IsEnumerable ? result : ((IEnumerable)result).Cast<object>().FirstOrDefault();
         }
 
@@ -73,13 +77,13 @@ namespace LinqToSolr.Query
         {
             var config = Service.Configuration;
             string path = string.Format("/{0}/select", config.GetIndex(typeof(TResult)));
-            var request = new SolrWebRequest(path);
+            var request = new SolrWebRequest(path, query.Method);
 
             request.AddParameter("q", "*");
             request.AddParameter("wt", "json");
             request.AddParameter("indent", "false");
-            request.AddParameter("rows", (query.Take > 0 ? query.Take : config.Take).ToString());
-            request.AddParameter("start", (query.Start > 0 ? query.Start : config.Start).ToString());
+            request.AddParameter("rows", (query.Take.HasValue ? query.Take : config.Take).ToString());
+            request.AddParameter("start", (query.Start.HasValue ? query.Start : config.Start).ToString());
 
             if (query.JoinFields.Any())
             {
@@ -94,8 +98,8 @@ namespace LinqToSolr.Query
             if (query.GroupFields.Any())
             {
                 request.AddParameter("group", "true");
-                request.AddParameter("group.limit", (query.Take > 0 ? query.Take : config.Take).ToString());
-                request.AddParameter("group.offset", (query.Start > 0 ? query.Start : config.Start).ToString());
+                request.AddParameter("group.limit", (query.Take.HasValue ? query.Take : config.Take).ToString());
+                request.AddParameter("group.offset", (query.Start.HasValue ? query.Start : config.Start).ToString());
                 foreach (var groupField in query.GroupFields)
                 {
                     request.AddParameter("group.field", groupField.Field);
@@ -211,12 +215,14 @@ namespace LinqToSolr.Query
             }
             return request;
         }
-        public virtual SolrResponse<TResult> ExecuteQuery<TResult>(ILinqToSolrQueriable<TResult> quariable)
+
+        public virtual async Task<SolrResponse<TResult>> ExecuteQuery<TResult>(ILinqToSolrQueriable<TResult> quariable)
         {
             quariable = quariable ?? new LinqToSolrQueriable<TResult>(this, null);
             var solrQuery = quariable.Translate();
             var request = PrepareQueryRequest<TResult>(solrQuery);
-            var response = Client.Execute(request);
+
+            var response = await Client.Execute(request);
 
             Service.LastResponseUrl = response.ResponseUri;
             var current = response.Content.FromJson<SolrResponse<TResult>>();
@@ -224,7 +230,8 @@ namespace LinqToSolr.Query
 
             return current;
         }
-        public void DeleteAll<TResult>()
+
+        public async Task DeleteAll<TResult>()
         {
             var quariable = new LinqToSolrQueriable<TResult>(this, null);
             var solrQuery = quariable.Translate();
@@ -232,33 +239,37 @@ namespace LinqToSolr.Query
             solrQuery.Filters.Clear();
             solrQuery.Filters.Add(LinqToSolrFilter.Create("*:*"));
             var request = PrepareDeleteRequest<TResult>(solrQuery);
-            var response = Client.Execute(request);
+            var response = await Client.Execute(request);
             var current = response.Content.FromJson<SolrResponse<TResult>>();
             Finalize(current, quariable);
         }
-        public void Delete<TResult>(ILinqToSolrQueriable<TResult> quariable)
+
+        public async Task Delete<TResult>(ILinqToSolrQueriable<TResult> quariable)
         {
             quariable = quariable ?? new LinqToSolrQueriable<TResult>(this, null);
             var solrQuery = quariable.Translate();
 
             var request = PrepareDeleteRequest<TResult>(solrQuery);
-            var response = Client.Execute(request);
+            var response = await Client.Execute(request);
             var current = response.Content.FromJson<SolrResponse<TResult>>();
             Finalize(current, quariable);
         }
-        public void Delete<TResult>(params object[] id)
+
+
+        public async Task Delete<TResult>(params object[] id)
         {
             var request = PrepareDeleteRequest<TResult>(null, id);
-            var response = Client.Execute(request);
+            var response = await Client.Execute(request);
             var current = response.Content.FromJson<SolrResponse<TResult>>();
             Finalize(current);
 
         }
 
-        public IEnumerable<TResult> AddOrUpdate<TResult>(IEnumerable<TResult> document, bool softCommit = false)
+
+        public async Task<IEnumerable<TResult>> AddOrUpdate<TResult>(bool softCommit = false, params TResult[] document)
         {
             var request = PrepareAddOrUpdateRequest(document, softCommit);
-            var response = Client.Execute(request);
+            var response = await Client.Execute(request);
             var current = response.Content.FromJson<SolrResponse<TResult>>();
             Finalize(current);
             return document;

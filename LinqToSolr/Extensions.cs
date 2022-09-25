@@ -8,6 +8,7 @@ using LinqToSolr.Models;
 using LinqToSolr.Expressions;
 using LinqToSolr.Interfaces;
 using LinqToSolr.Query;
+using System.Threading.Tasks;
 
 namespace LinqToSolr
 {
@@ -20,7 +21,7 @@ namespace LinqToSolr
             return enumerable;
         }
 
-        public static ILinqToSolrFacet<TSource> ToFacets<TSource>(this IQueryable<TSource> enumerable, params Expression<Func<TSource, object>>[] expression)
+        public static async Task<ILinqToSolrFacet<TSource>> ToFacets<TSource>(this IQueryable<TSource> enumerable, params Expression<Func<TSource, object>>[] expression)
         {
             var query = enumerable as ILinqToSolrQueriable<TSource>;
             if (query == null) throw new ArgumentException("ToFacets must be invoked from ILinqToSolrQueriable<>");
@@ -30,7 +31,7 @@ namespace LinqToSolr
             {
                 query.SolrQuery.Facets.Add(LinqToSolrFacet.Create(expr));
             }
-            var result = provider.ExecuteQuery(query);
+            var result = await provider.ExecuteQuery(query);
             return new LinqToSolrFacet<TSource>(result);
         }
 
@@ -70,6 +71,14 @@ namespace LinqToSolr
             query.SolrQuery.Filters.Add(LinqToSolrFilter.Create(strQuery));
             var provider = (ILinqToSolrProvider)query.Provider;
             provider.Delete(query);
+        }
+
+        public static IQueryable<TSource> AsPostMethod<TSource>(this IQueryable<TSource> enumerable)
+        {
+            var query = enumerable as ILinqToSolrQueriable<TSource>;
+            if (query == null) throw new ArgumentException("ToFacets must be invoked from ILinqToSolrQueriable<>");
+            query.SolrQuery.Method = SolrWebMethod.POST;
+            return enumerable;
         }
     }
 }

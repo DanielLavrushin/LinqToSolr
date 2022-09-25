@@ -30,9 +30,11 @@ namespace LinqToSolr.Models
 
         public ICollection<ILinqToSolrGrouping> GroupFields { get; }
         public ILinqSolrSelect Select { get; set; }
-        public int Take { get; set; }
-        public int Start { get; set; }
+        public int? Take { get; set; }
+        public int? Start { get; set; }
         IQueryable Query { get; }
+        public SolrWebMethod Method { get; set; }
+
         public LinqToSolrQuery(IQueryable query)
         {
             Query = query;
@@ -43,6 +45,8 @@ namespace LinqToSolr.Models
             Sortings = new List<ILinqToSolrSort>();
             GroupFields = new List<ILinqToSolrGrouping>();
             JoinFields = new List<ILinqToSolrJoiner>();
+
+            Method = SolrWebMethod.GET;
         }
 
     }

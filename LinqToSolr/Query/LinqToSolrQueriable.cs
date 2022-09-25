@@ -47,10 +47,5 @@ namespace LinqToSolr.Query
             qt.Translate(BooleanVisitor.Process(expression));
             return SolrQuery;
         }
-
-        public IEnumerable<TObject> Delete(IEnumerable<TObject> entities)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

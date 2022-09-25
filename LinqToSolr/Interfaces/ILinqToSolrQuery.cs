@@ -20,9 +20,8 @@ namespace LinqToSolr.Interfaces
         ICollection<ILinqToSolrGrouping> GroupFields { get; }
         ILinqSolrSelect Select { get; set; }
 
-        int Take { get; set; }
-        int Start { get; set; }
-
-
+        int? Take { get; set; }
+        int? Start { get; set; }
+        SolrWebMethod Method { get; set; }
     }
 }

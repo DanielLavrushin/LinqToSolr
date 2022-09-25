@@ -23,6 +23,11 @@ namespace LinqToSolr.Models
         {
             var o = new LinqToSolrSort();
             var fb = fieldExp as MemberExpression;
+            if (fieldExp is UnaryExpression)
+            {
+                var ufb = ((UnaryExpression)fieldExp);
+                fb = ufb.Operand as MemberExpression;
+            }
             if (fb != null)
             {
                 o.Field = fb.Member.GetSolrFieldName();

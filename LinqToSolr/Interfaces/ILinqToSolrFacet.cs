@@ -12,7 +12,6 @@ namespace LinqToSolr.Interfaces
 
     public interface ILinqToSolrFacet<TResult>
     {
-        IEnumerable<TResult> Documents { get; }
         IDictionary<TKey, int> Get<TKey>(Expression<Func<TResult, TKey>> prop);
     }
 }

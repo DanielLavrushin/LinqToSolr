@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -24,9 +25,12 @@ namespace LinqToSolr.Interfaces
                     var elem = Fields[fieldName];
                     var keys = elem.Where((i, index) => (index & 1) == 0).ToArray();
                     var vals = elem.Where((i, index) => (index & 1) == 1).ToArray();
+                    var converter = TypeDescriptor.GetConverter(typeof(TKey));
                     for (int i = 0; i < keys.Length; i++)
                     {
-                        dict.Add((TKey)keys[i], (int)vals[i]);
+                        var propVal = keys[i]?.ToString();
+                        var v = (TKey)converter.ConvertFromString(propVal);
+                        dict.Add(v, (int)vals[i]);
                     }
                     return dict;
                 }

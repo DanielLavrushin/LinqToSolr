@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 using NUnit.Framework;
 
@@ -8,13 +9,13 @@ namespace LinqToSolr.Tests
     public class FacetTests : BaseFixture
     {
         [Test]
-        public void SimpleFacetsTest()
+        public async Task SimpleFacetsTest()
         {
             factory.DeleteAll();
             var docs = factory.GenerateDocs(100);
             factory.AddOrUpdate(docs);
 
-            var facets = factory.Queriable().ToFacets(x => x.City, x => x.Name);
+            var facets = await factory.Queriable().ToFacets(x => x.City, x => x.Name);
 
             var cityGroup = facets.Get(x => x.City);
             foreach (var kv in cityGroup)
@@ -27,13 +28,13 @@ namespace LinqToSolr.Tests
         }
 
         [Test]
-        public void ExcludeFacetsTest()
+        public async Task ExcludeFacetsTest()
         {
             factory.DeleteAll();
             var docs = factory.GenerateDocs(100);
             factory.AddOrUpdate(docs);
 
-            var facets = factory.Queriable().ExcludeFacets(x => x.Name).ToFacets(x => x.City, x => x.Name);
+            var facets = await factory.Queriable().ExcludeFacets(x => x.Name).ToFacets(x => x.City, x => x.Name);
 
             var cityGroup = facets.Get(x => x.City);
             foreach (var kv in cityGroup)
