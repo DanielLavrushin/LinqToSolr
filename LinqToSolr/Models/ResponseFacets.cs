@@ -10,7 +10,33 @@ namespace LinqToSolr.Interfaces
     public class ResponseFacets<TResult>
     {
         [SolrField("facet_fields")]
-        Dictionary<string, object[]> Fields { get; set; }
+        internal Dictionary<string, object[]> Fields { get; set; }
+
+
+        public IDictionary<string, int> Raw<TKey>(Expression<Func<TResult, TKey>> prop)
+        {
+            if (prop.Body.NodeType == ExpressionType.MemberAccess)
+            {
+                var member = ((MemberExpression)prop.Body).Member;
+                var fieldName = SolrFieldAttribute.GetFieldName(member);
+
+                if (Fields.ContainsKey(fieldName))
+                {
+                    var dict = new Dictionary<string, int>();
+                    var elem = Fields[fieldName];
+                    var keys = elem.Where((i, index) => (index & 1) == 0).ToArray();
+                    var vals = elem.Where((i, index) => (index & 1) == 1).ToArray();
+                    for (int i = 0; i < keys.Length; i++)
+                    {
+                        var v = keys[i]?.ToString();
+                        dict.Add(v.ToString(), (int)vals[i]);
+                    }
+                    return dict;
+                }
+
+            }
+            return null;
+        }
 
         public IDictionary<TKey, int> Get<TKey>(Expression<Func<TResult, TKey>> prop)
         {

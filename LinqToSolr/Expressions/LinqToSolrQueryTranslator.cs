@@ -152,7 +152,8 @@ namespace LinqToSolr.Expressions
                     return m;
                 }
             }
-            if (m.Method.Name == nameof(string.Contains))
+
+            if (m.Method.Name == "Contains")
             {
                 if (m.Method.DeclaringType == typeof(string))
                 {
@@ -165,15 +166,25 @@ namespace LinqToSolr.Expressions
                 }
                 else
                 {
-                    var arr = (ConstantExpression)StripQuotes(m.Arguments[0]);
+                    var arr = StripQuotes(m.Arguments[0]);
                     Expression lambda;
 
                     if (m.Arguments.Count == 2)
                     {
-                        lambda = StripQuotes(m.Arguments[1]);
-                        Visit(lambda);
-                        Visit(arr);
+                        if (arr.NodeType == ExpressionType.Constant)
+                        {
+                            lambda = StripQuotes(m.Arguments[1]);
+                            Visit(lambda);
+                            Visit(arr);
 
+                        }
+                        else if (arr.NodeType == ExpressionType.MemberAccess)
+                        {
+                            lambda = StripQuotes(m.Arguments[0]);
+                            Visit(lambda);
+                            sb.Append(":");
+                            Visit(m.Arguments[1]);
+                        }
                     }
                     else
                     {
@@ -189,6 +200,7 @@ namespace LinqToSolr.Expressions
                     return m;
                 }
             }
+
 
             if (m.Method.Name == nameof(string.StartsWith))
             {
@@ -445,7 +457,7 @@ namespace LinqToSolr.Expressions
 
             if (m.Expression != null)
             {
-                if (m.Expression != null && (m.Expression.NodeType == ExpressionType.Constant || m.Expression.NodeType == ExpressionType.MemberAccess))
+                if (m.Expression != null && m.Expression.NodeType == ExpressionType.Constant)
                 {
                     var ce = (ConstantExpression)m.Expression;
                     sb.Append(ce.Value);
@@ -467,6 +479,12 @@ namespace LinqToSolr.Expressions
                             var joinstr = string.Format("!join from={0} to={1} fromIndex={2}", joiner.FieldKey, joiner.ForeignKey, query.Provider.Service.Configuration.GetIndex(joiner.PropertyRealType));
                             sb.Append("{" + joinstr + "}" + fieldName);
                         }
+                    }
+                    else if (ce.Type.Name.Contains("Nullable"))
+                    {
+                        var fieldName = GetFieldName(ce.Member, out formatValue);
+                        sb.Append(fieldName);
+
                     }
 
 

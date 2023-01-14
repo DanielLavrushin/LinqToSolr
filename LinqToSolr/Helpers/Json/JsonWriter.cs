@@ -83,7 +83,7 @@ namespace LinqToSolr.Helpers.Json
             else if (type == typeof(DateTime))
             {
                 stringBuilder.Append('"');
-                stringBuilder.Append(((DateTime)item).ToString("yyyy-MM-ddThh:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture));
+                stringBuilder.Append(((DateTime)item).ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture));
                 stringBuilder.Append('"');
             }
             else if (type.GetTypeInfo().IsEnum)

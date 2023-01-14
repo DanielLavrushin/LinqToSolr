@@ -1,30 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<TargetFrameworks>net45;net461;net472;net48;net5.0;net6.0;netstandard2.0;netstandard2.1;netcoreapp2.1;netcoreapp3.1</TargetFrameworks>
-		<AssemblyVersion Condition=" '$(AssemblyVersion)' == '' ">3.0</AssemblyVersion>
-		<AssemblyVersion>$(AssemblyVersion)</AssemblyVersion>
-		<FileVersion>$(AssemblyVersion)</FileVersion>
-		<Version>$(AssemblyVersion)</Version>
-		<AssemblyName>LinqToSolr</AssemblyName>
-		<AssemblyTitle>LinqToSolr for $(TargetFramework)</AssemblyTitle>
-		<RootNamespace>$(AssemblyName)</RootNamespace>
-		<Authors>Daniel Lavrushin</Authors>
-		<Product>$(AssemblyName)</Product>
-		<PackageId>$(AssemblyName)</PackageId>
-		<Description>This is a lightwave C# library to provide Linq support for Solr. </Description>
-		<Copyright>Copyright © Daniel Lavrushin 2021</Copyright>
-		<Summary>This is a lightwave C# library to provide Linq support for Solr. </Summary>
-		<RepositoryType>git</RepositoryType>
-		<GenerateDocumentationFile>false</GenerateDocumentationFile>
-		<NeutralLanguage>en</NeutralLanguage>
-	</PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyVersion Condition=" '$(AssemblyVersion)' == '' ">3.0</AssemblyVersion>
+    <AssemblyVersion>$(AssemblyVersion)</AssemblyVersion>
+    <FileVersion>$(AssemblyVersion)</FileVersion>
+    <Version>$(AssemblyVersion)</Version>
+    <AssemblyName>LinqToSolr</AssemblyName>
+    <AssemblyTitle>LinqToSolr for $(TargetFramework)</AssemblyTitle>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <Authors>Daniel Lavrushin</Authors>
+    <Product>$(AssemblyName)</Product>
+    <PackageId>$(AssemblyName)</PackageId>
+    <Description>This is a lightwave C# library to provide Linq support for Solr. </Description>
+    <Copyright>Copyright © Daniel Lavrushin 2021</Copyright>
+    <Summary>This is a lightwave C# library to provide Linq support for Solr. </Summary>
+    <RepositoryType>git</RepositoryType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NeutralLanguage>en</NeutralLanguage>
+  </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' =='Release'">
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<PackageTags>linqtosolr,solr,linq</PackageTags>
-		<PackageIconUrl></PackageIconUrl>
-		<PackageProjectUrl>https://github.com/DanielLavrushin/LinqToSolr</PackageProjectUrl>
-		<PackageLicenseUrl>https://github.com/DanielLavrushin/LinqToSolr/blob/master/LICENSE</PackageLicenseUrl>
-		<RepositoryUrl>https://www.nuget.org/packages/LinqToSolr/</RepositoryUrl>
-	</PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' =='Release'">
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageTags>linqtosolr,solr,linq</PackageTags>
+    <PackageIconUrl></PackageIconUrl>
+    <PackageProjectUrl>https://github.com/DanielLavrushin/LinqToSolr</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/DanielLavrushin/LinqToSolr/blob/master/LICENSE</PackageLicenseUrl>
+    <RepositoryUrl>https://www.nuget.org/packages/LinqToSolr/</RepositoryUrl>
+  </PropertyGroup>
 </Project>

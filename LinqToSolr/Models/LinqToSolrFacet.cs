@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
@@ -19,6 +20,12 @@ namespace LinqToSolr.Models
         public IDictionary<TKey, int> Get<TKey>(Expression<Func<TResult, TKey>> prop)
         {
             return responce.Facets.Get(prop);
+        }
+
+        public IDictionary<string, int> Raw<TKey>(Expression<Func<TResult, TKey>> prop)
+        {
+            return responce.Facets.Raw(prop);
+
         }
     }
 

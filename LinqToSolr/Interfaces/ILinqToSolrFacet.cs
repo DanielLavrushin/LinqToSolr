@@ -13,5 +13,6 @@ namespace LinqToSolr.Interfaces
     public interface ILinqToSolrFacet<TResult>
     {
         IDictionary<TKey, int> Get<TKey>(Expression<Func<TResult, TKey>> prop);
+        IDictionary<string, int> Raw<TKey>(Expression<Func<TResult, TKey>> prop);
     }
 }
