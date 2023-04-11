@@ -9,13 +9,14 @@ using LinqToSolr.Models;
 using LinqToSolr.Interfaces;
 using LinqToSolr.Helpers;
 using LinqToSolr.Query;
+using System.Globalization;
 
 namespace LinqToSolr.Expressions
 {
     internal class LinqToSolrQueryTranslator : ExpressionVisitor
     {
         private StringBuilder sb;
-        private bool _inRangeQuery;
+        private char _inRangeQuery;
         private bool _inRangeEqualQuery;
         private ILinqToSolrQuery query;
         private bool _isNotEqual;
@@ -304,14 +305,21 @@ namespace LinqToSolr.Expressions
                 case ExpressionType.NotEqual:
                     sb.Append(":");
                     break;
+                case ExpressionType.GreaterThan:
+                    sb.Append(":{");
+                    _inRangeQuery = '}';
+                    break;
+                case ExpressionType.LessThan:
+                    sb.Append(":{*");
+                    _inRangeQuery = '}';
+                    break;
                 case ExpressionType.GreaterThanOrEqual:
                     sb.Append(":[");
-                    _inRangeQuery = true;
+                    _inRangeQuery = ']';
                     break;
-
                 case ExpressionType.LessThanOrEqual:
                     sb.Append(":[*");
-                    _inRangeQuery = true;
+                    _inRangeQuery = ']';
                     break;
 
                 default:
@@ -337,7 +345,7 @@ namespace LinqToSolr.Expressions
             else
             {
                 //handle in range query
-                if (_inRangeQuery)
+                if (_inRangeQuery != char.MinValue)
                 {
                     if (sb[sb.Length - 1] == '*')
                     {
@@ -349,8 +357,8 @@ namespace LinqToSolr.Expressions
                         AppendConstValue(c.Value);
                         sb.Append(" TO *");
                     }
-                    sb.Append("]");
-                    _inRangeQuery = false;
+                    sb.Append(_inRangeQuery);
+                    _inRangeQuery = char.MinValue;
                 }
                 else
                 {
@@ -378,7 +386,7 @@ namespace LinqToSolr.Expressions
             //Set date format of Solr 1995-12-31T23:59:59.999Z
             if (val.GetType() == typeof(DateTime))
             {
-                sb.Append(((DateTime)val).ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+                sb.Append(((DateTime)val).ToString("yyyy-MM-ddTHH:mm:ss.fff", CultureInfo.InvariantCulture) + "Z");
             }
             else if (!(val is string) && isArray)
             {

@@ -24,6 +24,7 @@ namespace LinqToSolr.Helpers.Json
             }
 
             Type type = item.GetType();
+
             if (type == typeof(string) || type == typeof(char))
             {
                 stringBuilder.Append('"');
