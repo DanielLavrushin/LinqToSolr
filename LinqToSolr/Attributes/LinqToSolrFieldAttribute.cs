@@ -1,25 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Text;
+using LinqToSolr.Extensions;
 
-using LinqToSolr.Helpers;
-
-namespace LinqToSolr
+namespace LinqToSolr.Attributes
 {
     [AttributeUsage(AttributeTargets.Property)]
-    public class SolrFieldAttribute : Attribute
+    public class LinqToSolrFieldAttribute : Attribute
     {
         public string PropertyName;
         public string SearchFormat;
-        public SolrFieldAttribute() { }
-
-        public SolrFieldAttribute(string propertyName)
+        public LinqToSolrFieldAttribute(string propertyName)
         {
             PropertyName = propertyName;
         }
-        public SolrFieldAttribute(string propertyName, string searchFormat)
+        public LinqToSolrFieldAttribute(string propertyName, string searchFormat)
         {
             PropertyName = propertyName;
             SearchFormat = searchFormat;
@@ -28,14 +24,8 @@ namespace LinqToSolr
         public static string GetFieldName(MemberInfo member)
         {
             var name = member.Name;
-            var attr = member.GetCustomAttribute<SolrFieldAttribute>();
+            var attr = member.GetCustomAttribute<LinqToSolrFieldAttribute>();
             return attr == null ? name : attr.PropertyName;
         }
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class SolrFieldIgnoreAttribute : Attribute
-    {
-
     }
 }
