@@ -9,6 +9,13 @@ namespace LinqToSolr.Providers
 {
     public class LinqToSolrProvider : ILinqToSolrProvider
     {
+
+        public ILinqToSolrService Service { get; }
+        public LinqToSolrProvider(ILinqToSolrService service)
+        {
+            Service = service;
+        }
+
         public IQueryable CreateQuery(Expression expression)
         {
             throw new NotImplementedException();

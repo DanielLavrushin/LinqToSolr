@@ -8,6 +8,6 @@ namespace LinqToSolr.Providers
 {
     public interface ILinqToSolrProvider : IQueryProvider
     {
-
+        ILinqToSolrService Service { get; }
     }
 }

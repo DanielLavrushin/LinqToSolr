@@ -6,5 +6,6 @@ namespace LinqToSolr
 {
     public interface ILinqToSolrConfiguration
     {
+        ILinkToSolrEndpoint Endpoint { get; }
     }
 }

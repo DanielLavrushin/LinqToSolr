@@ -11,11 +11,22 @@ namespace LinqToSolr.Tests.Models
     {
         [LinqToSolrField("id")]
         public Guid Id { get; set; }
-        public string Name { get; set; }
-        public string Text { get; set; }
-        public int Number { get; set; }
+        public Guid Guid { get; set; }
+        public int Index { get; set; }
         public bool IsActive { get; set; }
-        [LinqToSolrField("birthdaydate")]
-        public DateTime Date { get; set; }
+        public string Name { get; set; }
+        public string Gender { get; set; }
+        public string Company { get; set; }
+        public string Email { get; set; }
+        public string Picture { get; set; }
+        public int Age { get; set; }
+        public int Balance { get; set; }
+        public string Address { get; set; }
+        public double Latitude { get; set; }
+        public string Longitude { get; set; }
+        public string[] Tags { get; set; }
+
+        [LinqToSolrField("registered")]
+        public DateTime Registered { get; set; }
     }
 }

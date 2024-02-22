@@ -6,13 +6,13 @@ namespace LinqToSolr
     {
         public ILinqToSolrConfiguration Configuration { get; }
 
-        public LinqToSolrService()
+        public LinqToSolrService(ILinqToSolrConfiguration configuration)
         {
-            Configuration = new LinqToSolrConfiguration();
+            Configuration = configuration;
         }
         public ILinqToSolrQueriable<TResult> AsQueryable<TResult>()
         {
-            return new LinqToSolrQueriable<TResult>(new LinqToSolrProvider());
+            return new LinqToSolrQueriable<TResult>(new LinqToSolrProvider(this));
         }
     }
 }

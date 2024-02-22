@@ -11,10 +11,11 @@ namespace LinqToSolr.Tests
             var guidstr = "00000000-0000-0000-0000-000000000000";
             var guid = new Guid(guidstr);
             var date = DateTime.Now;
-            var service = new LinqToSolrService();
+
+            var config = new LinqToSolrConfiguration(new LinkToSolrEndpoint("http://localhost:8983/solr/"));
+
+            var service = new LinqToSolrService(config);
             var list = service.AsQueryable<SolrDocument>().Where(x => x.IsActive || x.IsActive == false).ToList();
-
-
         }
     }
 }
