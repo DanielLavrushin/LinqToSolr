@@ -12,7 +12,7 @@ namespace LinqToSolr
         }
         public ILinqToSolrQueriable<TResult> AsQueryable<TResult>()
         {
-            return new LinqToSolrQueriable<TResult>(new LinqToSolrProvider(this));
+            return new LinqToSolrQueriable<TResult>(new LinqToSolrProvider(this, typeof(TResult)));
         }
     }
 }

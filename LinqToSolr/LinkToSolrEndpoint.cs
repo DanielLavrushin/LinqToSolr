@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Linq;
 
 namespace LinqToSolr
 {
@@ -8,11 +10,13 @@ namespace LinqToSolr
 
         public LinkToSolrEndpoint(string solrUrl)
         {
-            SolrUri = new Uri(solrUrl);
-            if (string.IsNullOrEmpty(SolrUri.AbsolutePath))
-            {
-                SolrUri = new Uri(SolrUri, "solr");
-            }
+            Uri uri = new Uri(solrUrl);
+            string basePath = "/" +  (uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "solr");
+            Uri baseUri = new Uri(uri, basePath);
+
+            string normalizedUri = baseUri.GetLeftPart(UriPartial.Authority) + basePath + "/";
+            SolrUri = new Uri(normalizedUri);
+            Debug.WriteLine("SolrUri: " + SolrUri);
         }
     }
 }

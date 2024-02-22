@@ -11,10 +11,16 @@ namespace LinqToSolr.Tests.Models
     {
         [LinqToSolrField("id")]
         public Guid Id { get; set; }
+        [LinqToSolrField("guid")]
         public Guid Guid { get; set; }
+        [LinqToSolrField("index")]
         public int Index { get; set; }
+
+        [LinqToSolrField("isActive")]
         public bool IsActive { get; set; }
-        public string Name { get; set; }
+        [LinqToSolrField("name")]
+        public string? Name { get; set; }
+        [LinqToSolrField("gender")]
         public string Gender { get; set; }
         public string Company { get; set; }
         public string Email { get; set; }

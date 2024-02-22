@@ -26,17 +26,15 @@ namespace LinqToSolr.Expressions
             Visit(Evaluator.PartialEval(BooleanVisitor.Process(expression)));
 
             var queryurl = q.ToString();
-            DebugTabs($"--------- final query string: ");
             return queryurl;
         }
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            DebugTabs($"VisitMethodCall - {node.NodeType} : {node.Method.Name}, arguments : {string.Join(" | ", node.Arguments.Select(x => x.ToString()))}");
-
-            if (node.Method.Name == nameof(Enumerable.Where))
+            if (node.Method.Name == nameof(Enumerable.Where) || node.Method.Name == nameof(Enumerable.FirstOrDefault) || node.Method.Name == nameof(Enumerable.First))
             {
-                return Visit(node.Arguments[1]);
+                return Visit(node.Arguments.Last());
             }
+
 
             Visit(node.Object);
             q.Append(":");
@@ -65,8 +63,6 @@ namespace LinqToSolr.Expressions
         }
         protected override Expression VisitBinary(BinaryExpression node)
         {
-            DebugTabs($"VisitBinary - {node.NodeType} : left {node.Left}, right {node.Right}");
-
             var isGroup = node.NodeType == ExpressionType.AndAlso || node.NodeType == ExpressionType.OrElse;
 
             if (isGroup)
@@ -135,7 +131,6 @@ namespace LinqToSolr.Expressions
         protected override Expression VisitConstant(ConstantExpression node)
         {
             q.Append(ExtractConstant(node.Value));
-            DebugTabs($"VisitConstant - {node.NodeType} : {node.Value}");
             return base.VisitConstant(node);
         }
         protected override Expression VisitMember(MemberExpression node)
@@ -152,8 +147,6 @@ namespace LinqToSolr.Expressions
                 q.Append(ExtractFieldName(node.Member));
             }
 
-
-            DebugTabs($"VisitMember - {node.NodeType} : {node.Member.Name}");
             return base.VisitMember(node);
         }
         protected override Expression VisitUnary(UnaryExpression node)
@@ -165,12 +158,10 @@ namespace LinqToSolr.Expressions
                     break;
             }
 
-            DebugTabs($"VisitUnary - {node.NodeType} : {node.Operand}");
             return base.VisitUnary(node);
         }
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            DebugTabs($"VisitParameter - {node.NodeType} : {node.Name}");
             return base.VisitParameter(node);
         }
         internal string ExtractFieldName(MemberInfo member)
@@ -186,7 +177,7 @@ namespace LinqToSolr.Expressions
 
             if (value is string)
             {
-                return $"\"{value}\"";
+                return value?.ToString().Replace(" ", @"\ ");
             }
             else if (value is bool)
             {
@@ -201,11 +192,7 @@ namespace LinqToSolr.Expressions
                 return value;
             }
         }
-        void DebugTabs(string message)
-        {
-            Debug.WriteLine($"{message}");
-            Debug.WriteLine($"      {q}");
-        }
+
         private static Expression StripQuotes(Expression e)
         {
             while (e.NodeType == ExpressionType.Quote)
