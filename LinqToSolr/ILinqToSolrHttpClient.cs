@@ -53,7 +53,6 @@ namespace LinqToSolr
         }
         public async Task<LinqToSolrResponse<TObject>> Execute<TObject>(LinqToSolrRequest<TObject> request)
         {
-
             using (var client = new HttpClient())
             {
                 var contentType = "application/json";

@@ -79,20 +79,26 @@ namespace LinqToSolr.Expressions
 
             if (node.Method.Name == nameof(string.StartsWith))
             {
-                q.Append(" *");
-                return Visit(node.Arguments[0]);
+                Visit(node.Object);
+                q.Append(":");
+                Visit(node.Arguments[0]);
+                q.Append("*");
+                return node;
             }
 
             if (node.Method.Name == nameof(string.EndsWith))
             {
+                Visit(node.Object);
+                q.Append(":");
+                q.Append("*");
                 Visit(node.Arguments[0]);
-                q.Append("* ");
                 return node;
             }
+
             if (node.Method.Name == nameof(Enumerable.Take))
             {
                 queryResult.Take = EvalConstant<int>(node.Arguments[1]);
-                return Visit(node.Arguments[0]); 
+                return Visit(node.Arguments[0]);
             }
 
             if (node.Method.Name == nameof(Enumerable.Skip))
@@ -253,9 +259,14 @@ namespace LinqToSolr.Expressions
                 case ExpressionType.Not:
                     q.Append("-");
                     break;
+                case ExpressionType.Convert:
+                case ExpressionType.Quote:
+                    Visit(node.Operand);
+                    break;
+                default:
+                    throw new NotSupportedException($"The unary operator '{node.Operand}' is not supported");
             }
-
-            return base.VisitUnary(node);
+            return node;
         }
         protected override Expression VisitParameter(ParameterExpression node)
         {
