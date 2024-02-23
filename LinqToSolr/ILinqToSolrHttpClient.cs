@@ -1,30 +1,31 @@
-﻿using LinqToSolr.Extensions;
+﻿using LinqToSolr.Expressions;
+using LinqToSolr.Extensions;
 using LinqToSolr.Providers;
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
 namespace LinqToSolr
 {
 
-    public class LinqToSolrRequest<TObject>
+    internal class LinqToSolrRequest<TObject>
     {
         public NameValueCollection QueryParameters { get; private set; }
         public LinqToSolrHttpMethod Method { get; }
         ILinqToSolrHttpClient _client;
-        public LinqToSolrRequest(ILinqToSolrHttpClient client, string expressionQuery, LinqToSolrHttpMethod method)
+        public LinqToSolrRequest(ILinqToSolrHttpClient client, TranslatedQuery expressionQuery, LinqToSolrHttpMethod method)
         {
             Method = method;
             _client = client;
             QueryParameters = HttpUtility.ParseQueryString(string.Empty);
             QueryParameters["q"] = "*";
             QueryParameters["wt"] = "json";
-            QueryParameters["fq"] = expressionQuery;
+            QueryParameters["start"] = expressionQuery.Skip.ToString();
+            QueryParameters["rows"] = expressionQuery.Take.ToString();
+            QueryParameters["fq"] = expressionQuery.Query;
             QueryParameters["indent"] = false.ToString().ToLower();
         }
 
@@ -36,13 +37,13 @@ namespace LinqToSolr
         }
     }
 
-    public interface ILinqToSolrHttpClient : IDisposable
+    internal interface ILinqToSolrHttpClient : IDisposable
     {
         ILinqToSolrProvider Provider { get; }
         Task<LinqToSolrResponse<TObject>> Execute<TObject>(LinqToSolrRequest<TObject> request);
     }
 
-    public class LinqToSolrHttpClient : ILinqToSolrHttpClient
+    internal class LinqToSolrHttpClient : ILinqToSolrHttpClient
     {
         public ILinqToSolrProvider Provider { get; }
 

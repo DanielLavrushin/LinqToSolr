@@ -27,7 +27,7 @@ namespace LinqToSolr.Tests
         public async Task EqualString()
         {
             var company = "DIGIQUE";
-            var doc =await service.AsQueryable<SolrDocument>().Where(x => x.Company == company).FirstOrDefaultAsync();
+            var doc = await service.AsQueryable<SolrDocument>().Where(x => x.Company == company).FirstOrDefaultAsync();
             Assert.IsNotNull(doc, "The result should not be null");
             Assert.AreEqual(company, doc.Company, "The company should be TALKOLA");
         }
@@ -69,6 +69,23 @@ namespace LinqToSolr.Tests
             Assert.IsNotNull(docs, "The result should not be null");
             Assert.IsTrue(docs.Count > 0, "There should be at least one document");
             Assert.IsTrue(docs.All(x => array.Contains(x.Index)), "All documents should have Index in the array");
+        }
+
+        [TestMethod]
+        public async Task TakeTest()
+        {
+            var docs = await service.AsQueryable<SolrDocument>().Take(5).ToListAsync();
+            Assert.IsNotNull(docs, "The result should not be null");
+            Assert.AreEqual(5, docs.Count, "There should be 5 documents");
+        }
+        [TestMethod]
+        public async Task SkipTest()
+        {
+            var docs = await service.AsQueryable<SolrDocument>().Take(5).Skip(10).ToListAsync();
+            docs = docs.OrderBy(x => x.Index).ToList();
+            Assert.IsNotNull(docs, "The result should not be null");
+            Assert.AreEqual(5, docs.Count, "There should be 5 documents");  
+          //  Assert.IsTrue(docs.All(x => x.Index > 10), "All documents should have Index > 10");
         }
     }
 }

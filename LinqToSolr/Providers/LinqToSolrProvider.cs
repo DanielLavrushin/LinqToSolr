@@ -12,8 +12,8 @@ namespace LinqToSolr.Providers
     public class LinqToSolrProvider : ILinqToSolrProvider
     {
         public Type ElementType { get; }
-
         public ILinqToSolrService Service { get; }
+
         public LinqToSolrProvider(ILinqToSolrService service, Type elementType)
         {
             Service = service;
@@ -38,7 +38,6 @@ namespace LinqToSolr.Providers
             var task = (Task)executeMethod.Invoke(this, new object[] { expression });
             return task.GetType().GetProperty("Result").GetValue(task);
         }
-
 
         public TResult Execute<TResult>(Expression expression)
         {

@@ -12,22 +12,29 @@ using System.Xml;
 
 namespace LinqToSolr.Expressions
 {
+    internal class TranslatedQuery
+    {
+        public int Skip { get; set; } = 0;
+        public int Take { get; set; } = 10;
+        public string Query { get; set; }
+    }
     internal class ExpressionTranslator<TObject> : ExpressionVisitor
     {
         Expression _expression { get; }
         StringBuilder q { get; set; }
+        TranslatedQuery queryResult;
         internal ExpressionTranslator(Expression expression)
         {
             _expression = expression;
 
         }
-        public string Translate(Expression expression)
+        public TranslatedQuery Translate(Expression expression)
         {
             q = new StringBuilder();
+            queryResult = new TranslatedQuery();
             Visit(Evaluator.PartialEval(BooleanVisitor.Process(expression)));
-
-            var queryurl = q.ToString();
-            return queryurl;
+            queryResult.Query = q.ToString();
+            return queryResult;
         }
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
@@ -82,6 +89,18 @@ namespace LinqToSolr.Expressions
                 q.Append("* ");
                 return node;
             }
+            if (node.Method.Name == nameof(Enumerable.Take))
+            {
+                queryResult.Take = EvalConstant<int>(node.Arguments[1]);
+                return Visit(node.Arguments[0]); 
+            }
+
+            if (node.Method.Name == nameof(Enumerable.Skip))
+            {
+                queryResult.Skip = EvalConstant<int>(node.Arguments[1]);
+                return Visit(node.Arguments[0]);
+            }
+
             throw new NotSupportedException($"The method '{node.Method.Name}' is not supported");
         }
         protected override Expression VisitBinary(BinaryExpression node)
@@ -160,13 +179,22 @@ namespace LinqToSolr.Expressions
         protected override Expression VisitConstant(ConstantExpression node)
         {
             var value = node.Value;
-            var valueType = value.GetType();
-            var isCollection = valueType == typeof(Enumerable) || typeof(IEnumerable).IsAssignableFrom(valueType);
             if (value == null)
             {
                 q.Append("(*) AND *:*");
             }
 
+            if (value is IQueryable qvalue)
+            {
+                if (qvalue.Expression.NodeType == ExpressionType.Call)
+                {
+                    Visit(qvalue.Expression);
+                }
+                return null;
+            }
+
+            var valueType = value.GetType();
+            var isCollection = valueType == typeof(Enumerable) || typeof(IEnumerable).IsAssignableFrom(valueType);
             if (value is string)
             {
                 q.Append(value?.ToString().Replace(" ", @"\ "));
@@ -199,9 +227,9 @@ namespace LinqToSolr.Expressions
             {
                 q.Append(value);
             }
-
-            return base.VisitConstant(node);
+            return node;
         }
+
         protected override Expression VisitMember(MemberExpression node)
         {
             if (node.Expression is ConstantExpression constantExpression)

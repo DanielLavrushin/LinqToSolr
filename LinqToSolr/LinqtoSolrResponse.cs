@@ -26,7 +26,7 @@ namespace LinqToSolr
     public class LinqToSolrResponseBase
     {
         [LinqToSolrField("responseHeader")]
-        public LinqToSolrResponseHeader Header { get; set; } = new LinqToSolrResponseHeader();
+        public LinqToSolrResponseHeader Header { get; set; }
     }
 
     public class LinqToSolrResponse<TObject> : LinqToSolrResponseBase
@@ -50,6 +50,7 @@ namespace LinqToSolr
     public class LinqToSolrError
     {
         public string[] Metadata { get; set; }
+      
         [LinqToSolrField("Msg")]
         public string Mesasge { get; set; }
         public HttpStatusCode Code { get; set; }
