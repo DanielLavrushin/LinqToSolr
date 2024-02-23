@@ -1,4 +1,5 @@
-﻿using LinqToSolr.Providers;
+﻿using LinqToSolr.Extensions;
+using LinqToSolr.Providers;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -10,32 +11,8 @@ using System.Web;
 
 namespace LinqToSolr
 {
-    public enum LinqToSolrHttpMethod
-    {
-        GET,
-        POST,
-        PUT,
-        DELETE
-    }
 
-    public interface ILinqToSolrResponse<TObject>
-    {
-        TObject Results { get; }
-    }
-
-    public class LinqToSolrResponse<TObject> : ILinqToSolrResponse<TObject>
-    {
-        public TObject Results { get; }
-    }
-
-    public interface ILinqToSolrRequest<TObject>
-    {
-        NameValueCollection QueryParameters { get; }
-        LinqToSolrHttpMethod Method { get; }
-        Uri GetCoreUri();
-    }
-
-    public class LinqToSolrRequest<TObject> : ILinqToSolrRequest<TObject>
+    public class LinqToSolrRequest<TObject>
     {
         public NameValueCollection QueryParameters { get; private set; }
         public LinqToSolrHttpMethod Method { get; }
@@ -62,7 +39,7 @@ namespace LinqToSolr
     public interface ILinqToSolrHttpClient : IDisposable
     {
         ILinqToSolrProvider Provider { get; }
-        Task<ILinqToSolrResponse<TObject>> Execute<TObject>(ILinqToSolrRequest<TObject> request);
+        Task<LinqToSolrResponse<TObject>> Execute<TObject>(LinqToSolrRequest<TObject> request);
     }
 
     public class LinqToSolrHttpClient : ILinqToSolrHttpClient
@@ -73,7 +50,7 @@ namespace LinqToSolr
         {
             Provider = provider;
         }
-        public async Task<ILinqToSolrResponse<TObject>> Execute<TObject>(ILinqToSolrRequest<TObject> request)
+        public async Task<LinqToSolrResponse<TObject>> Execute<TObject>(LinqToSolrRequest<TObject> request)
         {
 
             using (var client = new HttpClient())
@@ -82,18 +59,24 @@ namespace LinqToSolr
                 var url = request.GetCoreUri();
                 var uriBuilder = new UriBuilder(url);
                 uriBuilder.Query = request.QueryParameters.ToString();
-       
+
                 var httpRequestMessage = new HttpRequestMessage(request.Method == LinqToSolrHttpMethod.GET ? HttpMethod.Get : HttpMethod.Post, uriBuilder.Uri)
                 {
                     Content = null
                 };
 
-                var response = new LinqToSolrResponse<TObject>();
                 var httpResponse = await client.SendAsync(httpRequestMessage);
                 var responseContent = await httpResponse.Content.ReadAsStringAsync();
 
+                if (httpResponse.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    throw LinqToSolrException.ParseSolrErrorResponse(responseContent);
+                }
+
+                var response = JsonParser.FromJson<LinqToSolrResponse<TObject>>(responseContent);
+                response.Header.Status = System.Net.HttpStatusCode.OK;
+
                 Debug.WriteLine(uriBuilder.Uri);
-                Debug.WriteLine(responseContent);
                 return response;
             }
         }
@@ -101,7 +84,22 @@ namespace LinqToSolr
         public void Dispose()
         {
         }
+        public class LinqToSolrException : Exception
+        {
+            public LinqToSolrResponseError ResponseError { get; private set; }
 
+            private LinqToSolrException(string message, LinqToSolrResponseError responseError)
+                : base(message)
+            {
+                ResponseError = responseError;
+            }
 
+            public static LinqToSolrException ParseSolrErrorResponse(string solrResponse)
+            {
+                var responseError = JsonParser.FromJson<LinqToSolrResponseError>(solrResponse);
+                var message = responseError?.Error?.Mesasge ?? "An error occurred with the Solr response, but no specific message was provided.";
+                return new LinqToSolrException(message, responseError);
+            }
+        }
     }
 }

@@ -22,14 +22,18 @@ namespace LinqToSolr.Tests.Models
         public string? Name { get; set; }
         [LinqToSolrField("gender")]
         public string Gender { get; set; }
+        [LinqToSolrField("company")]
         public string Company { get; set; }
         public string Email { get; set; }
         public string Picture { get; set; }
         public int Age { get; set; }
-        public int Balance { get; set; }
+        [LinqToSolrField("balance")]
+        public decimal Balance { get; set; }
+        [LinqToSolrField("address")]
         public string Address { get; set; }
         public double Latitude { get; set; }
         public string Longitude { get; set; }
+        [LinqToSolrField("tags")]
         public string[] Tags { get; set; }
 
         [LinqToSolrField("registered")]

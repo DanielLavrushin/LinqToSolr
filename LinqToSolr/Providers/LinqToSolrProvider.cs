@@ -52,8 +52,9 @@ namespace LinqToSolr.Providers
             using (var client = new LinqToSolrHttpClient(this))
             {
                 var request = new LinqToSolrRequest<TResult>(client, query, LinqToSolrHttpMethod.GET);
-                var resopnse = await client.Execute(request);
-                return resopnse.Results;
+                var response = await client.Execute(request);
+                var docs = response.Response.Result;
+                return docs;
             }
         }
     }

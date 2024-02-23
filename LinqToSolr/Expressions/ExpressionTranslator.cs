@@ -1,5 +1,6 @@
 ﻿using LinqToSolr.Attributes;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -35,16 +36,38 @@ namespace LinqToSolr.Expressions
                 return Visit(node.Arguments.Last());
             }
 
-
-            Visit(node.Object);
-            q.Append(":");
-
             if (node.Method.Name == nameof(string.Contains))
             {
-                q.Append("*");
-                Visit(node.Arguments[0]);
-                q.Append("*");
-                return node;
+                if (node.Object != null && node.Object.Type == typeof(string))
+                {
+                    Visit(node.Object);
+                    q.Append(":");
+                    q.Append("*");
+                    Visit(node.Arguments[0]);
+                    q.Append("*");
+                    return node;
+                }
+
+                bool isCollection = node.Method.DeclaringType == typeof(Enumerable) || typeof(IEnumerable).IsAssignableFrom(node.Method.DeclaringType);
+                bool isStatic = node.Method.IsStatic && node.Object == null;
+
+                if (isCollection)
+                {
+                    var left = isStatic ? node.Arguments[1] : node.Object;
+                    var right = isStatic ? node.Arguments[0] : node.Arguments[1];
+
+                    if ((node.Arguments[0] as MemberExpression)?.Expression.NodeType == ExpressionType.Parameter ||
+                        node.Arguments[0].NodeType == ExpressionType.Parameter)
+                    {
+                        left = node.Arguments[0];
+                        right = isStatic ? node.Arguments[1] : node.Object;
+                    }
+
+                    Visit(left);
+                    q.Append(":");
+                    Visit(right);
+                    return node;
+                }
             }
 
             if (node.Method.Name == nameof(string.StartsWith))
@@ -59,8 +82,12 @@ namespace LinqToSolr.Expressions
                 q.Append("* ");
                 return node;
             }
-            throw new NotSupportedException(string.Format("The method '{0}' is not supported", node.Method.Name));
+            throw new NotSupportedException($"The method '{node.Method.Name}' is not supported");
         }
+
+
+
+
         protected override Expression VisitBinary(BinaryExpression node)
         {
             var isGroup = node.NodeType == ExpressionType.AndAlso || node.NodeType == ExpressionType.OrElse;
@@ -84,12 +111,18 @@ namespace LinqToSolr.Expressions
                     q.Append(" OR ");
                     Visit(node.Right);
                     break;
-                case ExpressionType.Equal:
                 case ExpressionType.NotEqual:
-                    if (node.NodeType == ExpressionType.NotEqual)
+                    var rightConstant = (node.Right as ConstantExpression);
+                    var rightValue = rightConstant.Value != null && rightConstant.Value is bool ? EvalConstant<bool>(node.Right) : false;
+                    if (!rightValue)
                     {
                         q.Append("-");
                     }
+                    Visit(node.Left);
+                    q.Append(":");
+                    Visit(rightValue ? Expression.Constant(false) : node.Right);
+                    break;
+                case ExpressionType.Equal:
                     Visit(node.Left);
                     q.Append(":");
                     Visit(node.Right);
@@ -119,7 +152,7 @@ namespace LinqToSolr.Expressions
                     q.Append("}");
                     break;
                 default:
-                    throw new NotSupportedException(string.Format("The binary operator '{0}' is not supported", node.NodeType));
+                    throw new NotSupportedException($"The binary operator '{node.NodeType}' is not supported");
             }
 
             if (isGroup)
@@ -130,7 +163,47 @@ namespace LinqToSolr.Expressions
         }
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            q.Append(ExtractConstant(node.Value));
+            var value = node.Value;
+            var valueType = value.GetType();
+            var isCollection = valueType == typeof(Enumerable) || typeof(IEnumerable).IsAssignableFrom(valueType);
+            if (value == null)
+            {
+                q.Append("(*) AND *:*");
+            }
+
+            if (value is string)
+            {
+                q.Append(value?.ToString().Replace(" ", @"\ "));
+            }
+            else if (value is bool)
+            {
+                q.Append(value.ToString().ToLower());
+            }
+            else if (value is DateTime)
+            {
+                q.Append(((DateTime)value).ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture));
+            }
+            else if (isCollection)
+            {
+                var array = (IEnumerable)value;
+                bool isFirst = true;
+                q.Append("(");
+                foreach (var item in array)
+                {
+                    if (!isFirst)
+                    {
+                        q.Append(" ");
+                    }
+                    Visit(Expression.Constant(item));
+                    isFirst = false;
+                }
+                q.Append(")");
+            }
+            else
+            {
+                q.Append(value);
+            }
+
             return base.VisitConstant(node);
         }
         protected override Expression VisitMember(MemberExpression node)
@@ -168,30 +241,6 @@ namespace LinqToSolr.Expressions
         {
             return LinqToSolrFieldAttribute.GetFieldName(member);
         }
-        object ExtractConstant(object value)
-        {
-            if (value == null)
-            {
-                return "(*) AND *:*";
-            }
-
-            if (value is string)
-            {
-                return value?.ToString().Replace(" ", @"\ ");
-            }
-            else if (value is bool)
-            {
-                return value.ToString().ToLower();
-            }
-            else if (value is DateTime)
-            {
-                return ((DateTime)value).ToString("yyyy-MM-ddTHH:mm:ss.fff", CultureInfo.InvariantCulture) + "Z";
-            }
-            else
-            {
-                return value;
-            }
-        }
 
         private static Expression StripQuotes(Expression e)
         {
@@ -200,6 +249,16 @@ namespace LinqToSolr.Expressions
                 e = ((UnaryExpression)e).Operand;
             }
             return e;
+        }
+
+        T EvalConstant<T>(Expression node)
+        {
+            var constantExpression = node as ConstantExpression;
+            if (constantExpression != null)
+            {
+                return (T)constantExpression.Value;
+            }
+            return default(T);
         }
     }
 }
