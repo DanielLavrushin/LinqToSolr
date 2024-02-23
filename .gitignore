@@ -286,4 +286,4 @@ __pycache__/
 *.btm.cs
 *.odx.cs
 *.xsd.cs
-/LinqToSolr.Tests/solr/dummy
+/LinqToSolr.Tests/solr/

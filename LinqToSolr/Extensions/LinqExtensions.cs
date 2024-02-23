@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace LinqToSolr.Extensions
@@ -14,14 +14,28 @@ namespace LinqToSolr.Extensions
             if (query.Provider is ILinqToSolrProvider provider)
             {
                 var expression = query.Expression;
-                return null;
-                //     var result = await provider.ExecuteAsync<T>(expression);
-                //     return result.ToList();
+                var result = await provider.ExecuteAsync<List<T>>(expression);
+                return result;
             }
             else
             {
                 throw new InvalidOperationException("The provider is not supported for async operations.");
             }
+        }
+
+        public static async Task<T> FirstOrDefaultAsync<T>(this IQueryable<T> query)
+        {
+            if (query.Provider is ILinqToSolrProvider provider)
+            {
+                var expression = query.Expression;
+                var result = await provider.ExecuteAsync<T>(expression);
+                return result;
+            }
+            else
+            {
+                throw new InvalidOperationException("The provider is not supported for async operations.");
+            }
+
         }
     }
 }

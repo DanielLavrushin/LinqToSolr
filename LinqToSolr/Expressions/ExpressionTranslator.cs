@@ -84,10 +84,6 @@ namespace LinqToSolr.Expressions
             }
             throw new NotSupportedException($"The method '{node.Method.Name}' is not supported");
         }
-
-
-
-
         protected override Expression VisitBinary(BinaryExpression node)
         {
             var isGroup = node.NodeType == ExpressionType.AndAlso || node.NodeType == ExpressionType.OrElse;
