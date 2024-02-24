@@ -8,21 +8,12 @@ using System.Net;
 
 namespace LinqToSolr
 {
-    public enum LinqToSolrHttpMethod
-    {
-        GET,
-        POST,
-        PUT,
-        DELETE
-    }
-
     public class LinqToSolrResponseHeader
     {
         public HttpStatusCode Status { get; set; }
         public int QTime { get; set; }
         public IDictionary<string, string> Params { get; set; }
     }
-
     public class LinqToSolrResponseBase
     {
         [LinqToSolrField("responseHeader")]

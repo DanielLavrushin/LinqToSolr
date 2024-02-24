@@ -18,6 +18,10 @@ namespace LinqToSolr.Tests.Models
 
         [LinqToSolrField("isActive")]
         public bool IsActive { get; set; }
+
+        [LinqToSolrField("isEnabled")]
+        public bool? IsEnabled { get; set; }
+
         [LinqToSolrField("name")]
         public string? Name { get; set; }
         [LinqToSolrField("gender")]

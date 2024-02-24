@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -12,11 +13,46 @@ using System.Xml;
 
 namespace LinqToSolr.Expressions
 {
+    public enum SortingDirection
+    {
+        ASC,
+        DESC
+    }
     internal class TranslatedQuery
     {
         public int Skip { get; set; } = 0;
         public int Take { get; set; } = 10;
         public string Query { get; set; }
+
+        internal IDictionary<string, SortingDirection> Sorting { get; }
+        internal void AddSorting(Expression expression, SortingDirection sortingDirection)
+        {
+
+            MemberExpression memberExpression = null;
+            if (expression is UnaryExpression unaryExpression)
+            {
+                memberExpression = unaryExpression.Operand as MemberExpression;
+            }
+            else if (expression is LambdaExpression)
+            {
+                memberExpression = (expression as LambdaExpression).Body as MemberExpression;
+            }
+            else if (expression is MemberExpression)
+            {
+                memberExpression = expression as MemberExpression;
+            }
+
+            if (expression != null)
+            {
+                var fieldName = LinqToSolrFieldAttribute.GetFieldName(memberExpression.Member);
+                Sorting.Add(fieldName, sortingDirection);
+            }
+        }
+
+        public TranslatedQuery()
+        {
+            Sorting = new Dictionary<string, SortingDirection>();
+        }
     }
     internal class ExpressionTranslator<TObject> : ExpressionVisitor
     {
@@ -107,6 +143,17 @@ namespace LinqToSolr.Expressions
                 return Visit(node.Arguments[0]);
             }
 
+            if (node.Method.Name == nameof(Enumerable.OrderBy) || node.Method.Name == nameof(Enumerable.ThenBy))
+            {
+                queryResult.AddSorting(StripQuotes(node.Arguments[1]), SortingDirection.ASC);
+                return Visit(node.Arguments[0]);
+            }
+            if (node.Method.Name == nameof(Enumerable.OrderByDescending) || node.Method.Name == nameof(Enumerable.ThenByDescending))
+            {
+                queryResult.AddSorting(StripQuotes(node.Arguments[1]), SortingDirection.DESC);
+                return Visit(node.Arguments[0]);
+            }
+
             throw new NotSupportedException($"The method '{node.Method.Name}' is not supported");
         }
         protected override Expression VisitBinary(BinaryExpression node)
@@ -133,17 +180,14 @@ namespace LinqToSolr.Expressions
                     Visit(node.Right);
                     break;
                 case ExpressionType.NotEqual:
-                    var rightConstant = (node.Right as ConstantExpression);
-                    var rightValue = rightConstant.Value != null && rightConstant.Value is bool ? EvalConstant<bool>(node.Right) : false;
-                    if (!rightValue)
+                    HandleNotEqual(node);
+                    break;
+                case ExpressionType.Equal:
+                    //in case if the right side is null , we should use the -field:[* TO *] syntax
+                    if (node.Right is ConstantExpression constRight && constRight.Value == null)
                     {
                         q.Append("-");
                     }
-                    Visit(node.Left);
-                    q.Append(":");
-                    Visit(rightValue ? Expression.Constant(false) : node.Right);
-                    break;
-                case ExpressionType.Equal:
                     Visit(node.Left);
                     q.Append(":");
                     Visit(node.Right);
@@ -187,7 +231,8 @@ namespace LinqToSolr.Expressions
             var value = node.Value;
             if (value == null)
             {
-                q.Append("(*) AND *:*");
+                q.Append(@"[* TO *]");
+                return node;
             }
 
             if (value is IQueryable qvalue)
@@ -198,7 +243,6 @@ namespace LinqToSolr.Expressions
                 }
                 return null;
             }
-
             var valueType = value.GetType();
             var isCollection = valueType == typeof(Enumerable) || typeof(IEnumerable).IsAssignableFrom(valueType);
             if (value is string)
@@ -268,11 +312,51 @@ namespace LinqToSolr.Expressions
             }
             return node;
         }
-        protected override Expression VisitParameter(ParameterExpression node)
+
+        private void HandleNotEqual(BinaryExpression node)
         {
-            return base.VisitParameter(node);
+            var rightConstant = node.Right as ConstantExpression;
+            var isRightNullConstant = rightConstant != null && rightConstant.Value == null;
+
+            if (isRightNullConstant)
+            {
+                Visit(node.Left);
+                q.Append(":[* TO *]");
+            }
+            else
+            {
+                var isRightBoolConstant = rightConstant != null && rightConstant.Type == typeof(bool);
+                var rightValue = isRightBoolConstant ? (bool)rightConstant.Value : false;
+
+                if (isRightBoolConstant && node.Left is MethodCallExpression methodCall)
+                {
+                    if (rightValue == true)
+                    {
+                        q.Append("-");
+                        VisitMethodCall(methodCall);
+                    }
+                    else
+                    {
+                        Visit(methodCall.Object);
+                        VisitMethodCall(methodCall);
+                    }
+                }
+                else if (!isRightBoolConstant)
+                {
+                    q.Append("-");
+                    Visit(node.Left);
+                    q.Append(":");
+                    Visit(node.Right);
+                }
+                else
+                {
+                    Visit(node.Left);
+                    q.Append(rightValue ? ":false" : ":true");
+                }
+            }
         }
-        internal string ExtractFieldName(MemberInfo member)
+
+        internal static string ExtractFieldName(MemberInfo member)
         {
             return LinqToSolrFieldAttribute.GetFieldName(member);
         }

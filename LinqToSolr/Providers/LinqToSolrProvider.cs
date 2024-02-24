@@ -1,8 +1,11 @@
 ﻿using LinqToSolr.Expressions;
+using LinqToSolr.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -48,13 +51,41 @@ namespace LinqToSolr.Providers
         {
             var translator = new ExpressionTranslator<TResult>(expression);
             var query = translator.Translate(expression);
-            using (var client = new LinqToSolrHttpClient(this))
+            var request = new LinqToSolrRequest<TResult>(this, query, HttpMethod.Get);
+            var response = await SendAsync(request);
+            var docs = response.Response.Result;
+            return docs;
+        }
+
+        internal async Task<LinqToSolrResponse<TObject>> SendAsync<TObject>(LinqToSolrRequest<TObject> request)
+        {
+            using (var client = new HttpClient())
             {
-                var request = new LinqToSolrRequest<TResult>(client, query, LinqToSolrHttpMethod.GET);
-                var response = await client.Execute(request);
-                var docs = response.Response.Result;
-                return docs;
+                var contentType = "application/json";
+                var url = request.GetCoreUri();
+                var uriBuilder = new UriBuilder(url);
+                uriBuilder.Query = request.QueryParameters.ToString();
+
+                var httpRequestMessage = new HttpRequestMessage(request.Method, uriBuilder.Uri)
+                {
+                    Content = null
+                };
+
+                var httpResponse = await client.SendAsync(httpRequestMessage);
+                var responseContent = await httpResponse.Content.ReadAsStringAsync();
+
+                if (httpResponse.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    throw LinqToSolrException.ParseSolrErrorResponse(responseContent);
+                }
+
+                var response = JsonParser.FromJson<LinqToSolrResponse<TObject>>(responseContent);
+                response.Header.Status = System.Net.HttpStatusCode.OK;
+
+                Debug.WriteLine(uriBuilder.Uri);
+                return response;
             }
         }
+
     }
 }
