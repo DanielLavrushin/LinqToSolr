@@ -12,13 +12,15 @@ using System.Web;
 namespace LinqToSolr
 {
 
-    internal class LinqToSolrRequest<TObject>
+    internal class LinqToSolrRequest
     {
+        public TranslatedQuery Translated { get; }
         public NameValueCollection QueryParameters { get; private set; }
         public HttpMethod Method { get; }
         ILinqToSolrProvider _provider;
         public LinqToSolrRequest(ILinqToSolrProvider provider, TranslatedQuery expressionQuery, HttpMethod method)
         {
+            Translated = expressionQuery;
             Method = method;
             _provider = provider;
             QueryParameters = HttpUtility.ParseQueryString(string.Empty);
@@ -31,9 +33,12 @@ namespace LinqToSolr
 
             if (expressionQuery.Sorting.Count > 0)
             {
-                QueryParameters["sort"] = string.Join(",", expressionQuery.Sorting.Reverse().Select(x => string.Format("{0} {1}", x.Key, x.Value)).ToArray());
+                QueryParameters["sort"] = string.Join(",", expressionQuery.Sorting.Reverse().Select(x => $"{x.Key} {x.Value}").ToArray());
             }
-
+            if (expressionQuery.Select.Count > 0)
+            {
+                QueryParameters["fl"] = string.Join(",", expressionQuery.Select.Select(x => x.Key).ToArray());
+            }
             Debug.WriteLine($"Query: {expressionQuery.Query}");
         }
 

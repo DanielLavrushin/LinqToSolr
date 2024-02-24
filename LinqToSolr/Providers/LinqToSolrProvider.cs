@@ -1,6 +1,7 @@
 ﻿using LinqToSolr.Expressions;
 using LinqToSolr.Extensions;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -38,7 +39,7 @@ namespace LinqToSolr.Providers
         public object Execute(Expression expression)
         {
             var executeMethod = typeof(LinqToSolrProvider).GetMethod(nameof(ExecuteAsync), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(ElementType);
-            var task = (Task)executeMethod.Invoke(this, new object[] { expression });
+            var task = (Task)executeMethod.Invoke(this, new[] { expression });
             return task.GetType().GetProperty("Result").GetValue(task);
         }
 
@@ -51,13 +52,35 @@ namespace LinqToSolr.Providers
         {
             var translator = new ExpressionTranslator<TResult>(expression);
             var query = translator.Translate(expression);
-            var request = new LinqToSolrRequest<TResult>(this, query, HttpMethod.Get);
-            var response = await SendAsync(request);
+            var request = new LinqToSolrRequest(this, query, HttpMethod.Get);
+            var response = await PrepareAndSendAsync<TResult>(request);
             var docs = response.Response.Result;
             return docs;
         }
 
-        internal async Task<LinqToSolrResponse<TObject>> SendAsync<TObject>(LinqToSolrRequest<TObject> request)
+        internal async Task<LinqToSolrResponse<TObject>> PrepareAndSendAsync<TObject>(LinqToSolrRequest request)
+        {
+            var returnType = typeof(TObject);
+            if (request.Translated.IsSelect)
+            {
+                var isCollection = returnType.IsGenericType ? typeof(Enumerable).IsAssignableFrom(returnType.GetGenericTypeDefinition()) || typeof(ICollection).IsAssignableFrom(returnType.GetGenericTypeDefinition()) :
+                typeof(Enumerable).IsAssignableFrom(returnType);
+
+                var responseType = typeof(LinqToSolrResponse<>).MakeGenericType(
+                    isCollection ? typeof(TObject).GetGenericTypeDefinition().MakeGenericType(ElementType)
+                    : ElementType
+                    );
+
+                var sendMethod = GetType().GetMethod(nameof(SendAsync), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(responseType);
+                var task = (Task)sendMethod.Invoke(this, new[] { request });
+                await task.ConfigureAwait(false);
+                var result = task.GetType().GetProperty(nameof(Task<object>.Result)).GetValue(task);
+            }
+
+            return await SendAsync<TObject>(request);
+        }
+
+        internal async Task<LinqToSolrResponse<TObject>> SendAsync<TObject>(LinqToSolrRequest request)
         {
             using (var client = new HttpClient())
             {
@@ -86,6 +109,5 @@ namespace LinqToSolr.Providers
                 return response;
             }
         }
-
     }
 }

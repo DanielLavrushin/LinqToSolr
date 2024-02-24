@@ -18,6 +18,10 @@ namespace LinqToSolr.Extensions
 
         public static T FromJson<T>(this string json)
         {
+            return (T)json.FromJson(typeof(T));
+        }
+        public static object FromJson(this string json, Type type)
+        {
             // Initialize, if needed, the ThreadStatic variables
             if (propertyInfoCache == null) propertyInfoCache = new Dictionary<Type, Dictionary<string, PropertyInfo>>();
             if (fieldInfoCache == null) fieldInfoCache = new Dictionary<Type, Dictionary<string, FieldInfo>>();
@@ -40,8 +44,7 @@ namespace LinqToSolr.Extensions
                 stringBuilder.Append(c);
             }
 
-            //Parse the thing!
-            return (T)ParseValue(typeof(T), stringBuilder.ToString());
+            return ParseValue(type, stringBuilder.ToString());
         }
 
         static int AppendUntilStringEnd(bool appendEscapeCharacter, int startIdx, string json)

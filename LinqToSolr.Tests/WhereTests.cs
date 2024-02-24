@@ -122,7 +122,7 @@ namespace LinqToSolr.Tests
         public async Task NotContainsStringTest()
         {
             var token = "Maple Avenue";
-            var docs = await service.AsQueryable<SolrDocument>().Where(x => !x.Address.Contains(token)).ToListAsync();
+            var docs = await service.AsQueryable<SolrDocument>().Where(x => x.Address != null && !x.Address.Contains(token)).ToListAsync();
             Assert.IsNotNull(docs, "The result should not be null");
             Assert.IsTrue(docs.Count > 0, "There should be at least one document");
             Assert.IsTrue(docs.All(x => !x.Address.Contains(token)), $"All documents should have Address not containing {token}");
@@ -132,7 +132,7 @@ namespace LinqToSolr.Tests
         public async Task NotStartsWithStringTest()
         {
             var token = "Norton";
-            var docs = await service.AsQueryable<SolrDocument>().Where(x => !x.Name.StartsWith(token)).ToListAsync();
+            var docs = await service.AsQueryable<SolrDocument>().Where(x => x.Name != null &&  !x.Name.StartsWith(token)).ToListAsync();
             Assert.IsNotNull(docs, "The result should not be null");
             Assert.IsTrue(docs.Count > 0, "There should be at least one document");
             Assert.IsTrue(docs.All(x => !x.Name.StartsWith(token)), $"All documents should have Name not starting with {token}");
@@ -214,7 +214,7 @@ namespace LinqToSolr.Tests
         public async Task NotContainsInMultiFieldTest()
         {
             var token = "Hungary";
-            var docs = await service.AsQueryable<SolrDocument>().Where(x => !x.Tags.Contains(token)).ToListAsync();
+            var docs = await service.AsQueryable<SolrDocument>().Where(x => x.Tags != null && !x.Tags.Contains(token)).ToListAsync();
             Assert.IsNotNull(docs, "The result should not be null");
             Assert.IsTrue(docs.Count > 0, "There should be at least one document");
             Assert.IsTrue(docs.All(x => !x.Tags.Contains(token)), $"All documents should not have {token} in the tags");

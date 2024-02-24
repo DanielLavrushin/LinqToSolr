@@ -1,7 +1,6 @@
 ﻿using LinqToSolr.Attributes;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -13,47 +12,7 @@ using System.Xml;
 
 namespace LinqToSolr.Expressions
 {
-    public enum SortingDirection
-    {
-        ASC,
-        DESC
-    }
-    internal class TranslatedQuery
-    {
-        public int Skip { get; set; } = 0;
-        public int Take { get; set; } = 10;
-        public string Query { get; set; }
 
-        internal IDictionary<string, SortingDirection> Sorting { get; }
-        internal void AddSorting(Expression expression, SortingDirection sortingDirection)
-        {
-
-            MemberExpression memberExpression = null;
-            if (expression is UnaryExpression unaryExpression)
-            {
-                memberExpression = unaryExpression.Operand as MemberExpression;
-            }
-            else if (expression is LambdaExpression)
-            {
-                memberExpression = (expression as LambdaExpression).Body as MemberExpression;
-            }
-            else if (expression is MemberExpression)
-            {
-                memberExpression = expression as MemberExpression;
-            }
-
-            if (expression != null)
-            {
-                var fieldName = LinqToSolrFieldAttribute.GetFieldName(memberExpression.Member);
-                Sorting.Add(fieldName, sortingDirection);
-            }
-        }
-
-        public TranslatedQuery()
-        {
-            Sorting = new Dictionary<string, SortingDirection>();
-        }
-    }
     internal class ExpressionTranslator<TObject> : ExpressionVisitor
     {
         Expression _expression { get; }
@@ -148,9 +107,16 @@ namespace LinqToSolr.Expressions
                 queryResult.AddSorting(StripQuotes(node.Arguments[1]), SortingDirection.ASC);
                 return Visit(node.Arguments[0]);
             }
+
             if (node.Method.Name == nameof(Enumerable.OrderByDescending) || node.Method.Name == nameof(Enumerable.ThenByDescending))
             {
                 queryResult.AddSorting(StripQuotes(node.Arguments[1]), SortingDirection.DESC);
+                return Visit(node.Arguments[0]);
+            }
+
+            if (node.Method.Name == nameof(Enumerable.Select))
+            {
+                queryResult.AddSelectField(StripQuotes(node.Arguments[1]));
                 return Visit(node.Arguments[0]);
             }
 
