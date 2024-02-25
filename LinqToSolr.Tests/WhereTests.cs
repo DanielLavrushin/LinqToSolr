@@ -231,5 +231,18 @@ namespace LinqToSolr.Tests
             Assert.AreEqual(5, docs.Count, "There should be 5 documents");
             //  Assert.IsTrue(docs.All(x => x.Index > 10), "All documents should have Index > 10");
         }
+
+        [TestMethod]
+        public async Task MultipleFiltersTest()
+        {
+            var query = Service.AsQueryable<SolrDocument>();
+            query = query.Where(x => x.Index > 10);
+            query = query.Where(x => x.Index < 50);
+            query = query.Where(x => x.Name.StartsWith("A"));
+            var docs = await query.ToListAsync();
+            Assert.IsNotNull(docs, "The result should not be null");
+            Assert.IsTrue(docs.Count > 0, "There should be at least one document");
+            Assert.IsTrue(docs.All(x => x.Index > 10 && x.Index < 50 && x.Name.StartsWith("A")), "All documents should have Index > 10 and Index < 50 and Name starts with A");
+        }
     }
 }

@@ -50,7 +50,8 @@ namespace LinqToSolr.Providers
         public async Task<TResult> ExecuteAsync<TResult>(Expression expression)
         {
             var translator = new ExpressionTranslator<TResult>(expression);
-            var query = translator.Translate(expression);
+            var translatedQuery = new TranslatedQuery();
+            var query = translator.Translate(expression, translatedQuery);
             var request = new LinqToSolrRequest(this, query, HttpMethod.Get);
             var response = await PrepareAndSendAsync<TResult>(request);
             var docs = response.Response.Result;

@@ -23,12 +23,16 @@ namespace LinqToSolr
             Translated = expressionQuery;
             Method = method;
             _provider = provider;
+
             QueryParameters = HttpUtility.ParseQueryString(string.Empty);
+            foreach (var filter in expressionQuery.Filters)
+            {
+                QueryParameters.Add("fq", filter);
+            }
             QueryParameters["q"] = "*";
             QueryParameters["wt"] = "json";
             QueryParameters["start"] = expressionQuery.Skip.ToString();
             QueryParameters["rows"] = expressionQuery.Take.ToString();
-            QueryParameters["fq"] = expressionQuery.Query;
             QueryParameters["indent"] = false.ToString().ToLower();
 
             if (expressionQuery.Sorting.Count > 0)
@@ -39,7 +43,6 @@ namespace LinqToSolr
             {
                 QueryParameters["fl"] = string.Join(",", expressionQuery.Select.Select(x => x.Key).ToArray());
             }
-            Debug.WriteLine($"Query: {expressionQuery.Query}");
         }
 
         public Uri GetCoreUri()

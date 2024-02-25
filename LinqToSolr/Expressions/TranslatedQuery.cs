@@ -15,7 +15,6 @@ namespace LinqToSolr.Expressions
     {
         public int Skip { get; set; } = 0;
         public int Take { get; set; } = 100;
-        public string Query { get; set; }
 
         public bool IsSelect => Select?.Count > 0;
         public bool IsSelectAsObject => Select?.Count > 1;
@@ -24,6 +23,7 @@ namespace LinqToSolr.Expressions
 
         internal IDictionary<string, SortingDirection> Sorting { get; } = new Dictionary<string, SortingDirection>();
         internal IDictionary<string, MemberInfo> Select { get; } = new Dictionary<string, MemberInfo>();
+        internal ICollection<string> Filters { get; } = new List<string>();
         internal void AddSorting(Expression expression, SortingDirection sortingDirection)
         {
 

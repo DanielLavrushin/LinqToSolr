@@ -1,4 +1,5 @@
 ﻿using LinqToSolr.Providers;
+using System.Linq;
 
 namespace LinqToSolr
 {
@@ -10,7 +11,7 @@ namespace LinqToSolr
         {
             Configuration = configuration;
         }
-        public ILinqToSolrQueriable<TResult> AsQueryable<TResult>()
+        public IQueryable<TResult> AsQueryable<TResult>()
         {
             return new LinqToSolrQueriable<TResult>(new LinqToSolrProvider(this, typeof(TResult)));
         }

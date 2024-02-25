@@ -17,25 +17,34 @@ namespace LinqToSolr.Expressions
     {
         Expression _expression { get; }
         StringBuilder q { get; set; }
-        TranslatedQuery queryResult;
+        TranslatedQuery _queryResult;
         internal ExpressionTranslator(Expression expression)
         {
             _expression = expression;
 
         }
-        public TranslatedQuery Translate(Expression expression)
+        public TranslatedQuery Translate(Expression expression, TranslatedQuery queryResult)
         {
+            _queryResult = queryResult;
             q = new StringBuilder();
-            queryResult = new TranslatedQuery();
             Visit(Evaluator.PartialEval(BooleanVisitor.Process(expression)));
-            queryResult.Query = q.ToString();
+            var result = q.ToString();
+            if (!string.IsNullOrEmpty(result))
+            {
+                _queryResult.Filters.Add(q.ToString());
+            }
             return queryResult;
         }
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             if (node.Method.Name == nameof(Enumerable.Where) || node.Method.Name == nameof(Enumerable.FirstOrDefault) || node.Method.Name == nameof(Enumerable.First))
             {
-                return Visit(node.Arguments.Last());
+                var lambda = (LambdaExpression)StripQuotes(node.Arguments[1]);
+
+                var solrQueryTranslator = new ExpressionTranslator<TObject>(lambda);
+                var fq = solrQueryTranslator.Translate(lambda, _queryResult);
+                Visit(node.Arguments[0]);
+                return node;
             }
 
             if (node.Method.Name == nameof(string.Contains))
@@ -92,31 +101,31 @@ namespace LinqToSolr.Expressions
 
             if (node.Method.Name == nameof(Enumerable.Take))
             {
-                queryResult.Take = EvalConstant<int>(node.Arguments[1]);
+                _queryResult.Take = EvalConstant<int>(node.Arguments[1]);
                 return Visit(node.Arguments[0]);
             }
 
             if (node.Method.Name == nameof(Enumerable.Skip))
             {
-                queryResult.Skip = EvalConstant<int>(node.Arguments[1]);
+                _queryResult.Skip = EvalConstant<int>(node.Arguments[1]);
                 return Visit(node.Arguments[0]);
             }
 
             if (node.Method.Name == nameof(Enumerable.OrderBy) || node.Method.Name == nameof(Enumerable.ThenBy))
             {
-                queryResult.AddSorting(StripQuotes(node.Arguments[1]), SortingDirection.ASC);
+                _queryResult.AddSorting(StripQuotes(node.Arguments[1]), SortingDirection.ASC);
                 return Visit(node.Arguments[0]);
             }
 
             if (node.Method.Name == nameof(Enumerable.OrderByDescending) || node.Method.Name == nameof(Enumerable.ThenByDescending))
             {
-                queryResult.AddSorting(StripQuotes(node.Arguments[1]), SortingDirection.DESC);
+                _queryResult.AddSorting(StripQuotes(node.Arguments[1]), SortingDirection.DESC);
                 return Visit(node.Arguments[0]);
             }
 
             if (node.Method.Name == nameof(Enumerable.Select))
             {
-                queryResult.AddSelectField(StripQuotes(node.Arguments[1]));
+                _queryResult.AddSelectField(StripQuotes(node.Arguments[1]));
                 return Visit(node.Arguments[0]);
             }
 

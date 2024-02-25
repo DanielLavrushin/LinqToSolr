@@ -1,90 +1,95 @@
 {
-    "add-field": [
-        {
-            "name": "index",
-            "type": "pint",
-            "stored": true
-        },
-        {
-            "name": "isActive",
-            "type": "boolean",
-            "stored": true
-        },
-        {
-            "name": "balance",
-            "type": "pfloat",
-            "stored": true
-        },
-        {
-            "name": "picture",
-            "type": "string",
-            "stored": true
-        },
-        {
-            "name": "age",
-            "type": "pint",
-            "stored": true
-        },
-        {
-            "name": "name",
-            "type": "string",
-            "stored": true
-        },
-        {
-            "name": "username",
-            "type": "string",
-            "stored": true
-        },
-        {
-            "name": "gender",
-            "type": "string",
-            "stored": true
-        },
-        {
-            "name": "company",
-            "type": "string",
-            "stored": true
-        },
-        {
-            "name": "email",
-            "type": "string",
-            "stored": true
-        },
-        {
-            "name": "phone",
-            "type": "string",
-            "stored": true
-        },
-        {
-            "name": "address",
-            "type": "string",
-            "stored": true
-        },
-        {
-            "name": "about",
-            "type": "text_general",
-            "stored": true
-        },
-        {
-            "name": "registered",
-            "type": "string",
-            "stored": true
-        },
-        {
-            "name": "latitude",
-            "type": "pdouble",
-            "stored": true
-        },
-        {
-            "name": "longitude",
-            "type": "pdouble",
-            "stored": true
-        },
-        {
-            "name": "tags",
-            "type": "strings",
-            "stored": true,
-            "multiValued": true
-        }
-    ]
+  "add-field": [
+    {
+      "name": "index",
+      "type": "pint",
+      "stored": true
+    },
+    {
+      "name": "isActive",
+      "type": "boolean",
+      "stored": true
+    },
+    {
+      "name": "isEnabled",
+      "type": "boolean",
+      "stored": true
+    },
+    {
+      "name": "balance",
+      "type": "pfloat",
+      "stored": true
+    },
+    {
+      "name": "picture",
+      "type": "string",
+      "stored": true
+    },
+    {
+      "name": "age",
+      "type": "pint",
+      "stored": true
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "stored": true
+    },
+    {
+      "name": "username",
+      "type": "string",
+      "stored": true
+    },
+    {
+      "name": "gender",
+      "type": "string",
+      "stored": true
+    },
+    {
+      "name": "company",
+      "type": "string",
+      "stored": true
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "stored": true
+    },
+    {
+      "name": "phone",
+      "type": "string",
+      "stored": true
+    },
+    {
+      "name": "address",
+      "type": "string",
+      "stored": true
+    },
+    {
+      "name": "about",
+      "type": "text_general",
+      "stored": true
+    },
+    {
+      "name": "registered",
+      "type": "string",
+      "stored": true
+    },
+    {
+      "name": "latitude",
+      "type": "pdouble",
+      "stored": true
+    },
+    {
+      "name": "longitude",
+      "type": "pdouble",
+      "stored": true
+    },
+    {
+      "name": "tags",
+      "type": "strings",
+      "stored": true,
+      "multiValued": true
+    }
+  ]
 }
