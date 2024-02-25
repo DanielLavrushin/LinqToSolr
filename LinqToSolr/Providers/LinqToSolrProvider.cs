@@ -13,8 +13,9 @@ using System.Threading.Tasks;
 
 namespace LinqToSolr.Providers
 {
-    public class LinqToSolrProvider : ILinqToSolrProvider
+    public class LinqToSolrProvider : ILinqToSolrProvider, IDisposable
     {
+        private static readonly HttpClient httpClient = new HttpClient();
         public Type ElementType { get; }
         public ILinqToSolrService Service { get; }
 
@@ -22,6 +23,11 @@ namespace LinqToSolr.Providers
         {
             Service = service;
             ElementType = elementType;
+            if (Service.Configuration.Endpoint.IsProtected)
+            {
+                var byteArray = Encoding.ASCII.GetBytes($"{Service.Configuration.Endpoint.Username}:{Service.Configuration.Endpoint.Password}");
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+            }
         }
 
         public IQueryable CreateQuery(Expression expression)
@@ -54,60 +60,75 @@ namespace LinqToSolr.Providers
             var query = translator.Translate(expression, translatedQuery);
             var request = new LinqToSolrRequest(this, query, HttpMethod.Get);
             var response = await PrepareAndSendAsync<TResult>(request);
-            var docs = response.Response.Result;
+            var docs = response.GetDocuments();
             return docs;
         }
 
-        internal async Task<LinqToSolrResponse<TObject>> PrepareAndSendAsync<TObject>(LinqToSolrRequest request)
+        internal async Task<ILinqToSolrFinalResponse<TObject>> PrepareAndSendAsync<TObject>(LinqToSolrRequest request)
         {
             var response = await PrepareAndSendAsync(request, typeof(TObject));
-            return response as LinqToSolrResponse<TObject>;
+            return response as ILinqToSolrFinalResponse<TObject>;
         }
 
         internal async Task<object> PrepareAndSendAsync(LinqToSolrRequest request, Type returnType)
         {
-            if (request.Translated.IsSelect)
+            if (request.Translated.Select.Any())
             {
                 var response = await SendAsync(request, returnType);
                 var documents = SelectDocuments(request, response);
                 var selectresponse = CreateFakeResponse(documents, returnType);
+                return selectresponse;
+            }
 
+            if (request.Translated.Groups.Any())
+            {
+                var documents = await SendAsync(request, returnType);
+                var selectresponse = CreateFakeResponse(documents, returnType);
                 return selectresponse;
             }
             return await SendAsync(request, returnType);
         }
-        internal Task<LinqToSolrResponse<TObject>> SendAsync<TObject>(LinqToSolrRequest request)
-        {
-            return SendAsync(request, typeof(TObject)) as Task<LinqToSolrResponse<TObject>>;
-        }
 
+        internal Task<ILinqToSolrFinalResponse<TObject>> SendAsync<TObject>(LinqToSolrRequest request)
+        {
+            return SendAsync(request, typeof(TObject)) as Task<ILinqToSolrFinalResponse<TObject>>;
+        }
         internal async Task<object> SendAsync(LinqToSolrRequest request, Type returnType)
         {
-            using (var client = new HttpClient())
+
+            var contentType = "application/json";
+            var url = request.GetCoreUri();
+            var uriBuilder = new UriBuilder(url);
+            uriBuilder.Query = request.QueryParameters.ToString();
+
+            var httpRequestMessage = new HttpRequestMessage(request.Method, uriBuilder.Uri)
             {
-                var contentType = "application/json";
-                var url = request.GetCoreUri();
-                var uriBuilder = new UriBuilder(url);
-                uriBuilder.Query = request.QueryParameters.ToString();
+                Content = null
+            };
+            var httpResponse = await httpClient.SendAsync(httpRequestMessage);
+            var responseContent = await httpResponse.Content.ReadAsStringAsync();
 
-                var httpRequestMessage = new HttpRequestMessage(request.Method, uriBuilder.Uri)
-                {
-                    Content = null
-                };
-                var httpResponse = await client.SendAsync(httpRequestMessage);
-                var responseContent = await httpResponse.Content.ReadAsStringAsync();
-
-                if (httpResponse.StatusCode != System.Net.HttpStatusCode.OK)
-                {
-                    throw LinqToSolrException.ParseSolrErrorResponse(responseContent);
-                }
-
-                var isCollection = returnType.IsGenericType ? typeof(Enumerable).IsAssignableFrom(returnType.GetGenericTypeDefinition()) || typeof(ICollection).IsAssignableFrom(returnType.GetGenericTypeDefinition()) : typeof(Enumerable).IsAssignableFrom(returnType);
-                var responseType = typeof(LinqToSolrResponse<>).MakeGenericType(isCollection ? returnType.GetGenericTypeDefinition().MakeGenericType(ElementType) : ElementType);
-                var response = JsonParser.FromJson(responseContent, responseType);
-                Debug.WriteLine(uriBuilder.Uri);
-                return response;
+            if (httpResponse.StatusCode != System.Net.HttpStatusCode.OK)
+            {
+                throw LinqToSolrException.ParseSolrErrorResponse(responseContent);
             }
+
+            var isCollection = returnType.IsGenericType ? typeof(Enumerable).IsAssignableFrom(returnType.GetGenericTypeDefinition()) || typeof(ICollection).IsAssignableFrom(returnType.GetGenericTypeDefinition()) : typeof(Enumerable).IsAssignableFrom(returnType);
+
+            Type responseGenericType = request.Translated.Groups.Any() ? typeof(LinqToSolrGroupResponse<>) : typeof(LinqToSolrResponse<>);
+
+            var responseType = responseGenericType.MakeGenericType(isCollection ? returnType.GetGenericTypeDefinition().MakeGenericType(ElementType) : ElementType);
+            var response = JsonParser.FromJson(responseContent, responseType);
+
+            if (request.Translated.Groups.Any())
+            {
+                var keyType = returnType.GenericTypeArguments[0].GenericTypeArguments[0];
+                var listType = typeof(List<>).MakeGenericType(ElementType);
+                response = InvokeGenericMethod(GetType(), nameof(GroupDocuments), new[] { keyType, ElementType, listType }, this, new[] { response, returnType });
+            }
+
+            Debug.WriteLine(uriBuilder.Uri);
+            return response;
         }
 
         object CreateFakeResponse(object documents, Type returnType)
@@ -119,7 +140,41 @@ namespace LinqToSolr.Providers
             return response;
         }
 
-        object SelectDocuments(LinqToSolrRequest request, object response)
+        private object GroupDocuments<TKey, TElement, TObject>(LinqToSolrGroupResponse<TObject> response, Type returnType) where TObject : IEnumerable<TElement>
+        {
+            var groups = new List<IGrouping<TKey, TElement>>();
+
+            foreach (var groupField in response.Grouped)
+            {
+                foreach (var group in groupField.Value.Groups)
+                {
+                    var key = (TKey)group.Id;
+                    var elements = group.Result.Documents;
+
+                    var grouping = new Grouping<TKey, TElement, TObject>(key, elements);
+                    groups.Add(grouping);
+                }
+            }
+
+            var result = Convert.ChangeType(groups, returnType);
+            return result;
+        }
+        internal class Grouping<TKey, TElement, TObject> : IGrouping<TKey, TElement> where TObject : IEnumerable<TElement>
+        {
+            private readonly TKey _key;
+            private readonly TObject _elements;
+
+            public Grouping(TKey key, TObject elements)
+            {
+                _key = key;
+                _elements = elements;
+            }
+            public TKey Key => _key;
+            public IEnumerator<TElement> GetEnumerator() => _elements.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => _elements.GetEnumerator();
+        }
+
+        private object SelectDocuments(LinqToSolrRequest request, object response)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             if (response == null) throw new ArgumentNullException(nameof(response));
@@ -136,11 +191,17 @@ namespace LinqToSolr.Providers
 
             return materializedResult;
         }
+
         private object InvokeGenericMethod(Type type, string methodName, Type[] genericTypes, object target, object[] parameters)
         {
-            var method = type.GetMethods().First(m => m.Name == methodName && m.GetGenericArguments().Length == genericTypes.Length).MakeGenericMethod(genericTypes);
+            var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+            var method = type.GetMethods(flags).First(m => m.Name == methodName && m.GetGenericArguments().Length == genericTypes.Length).MakeGenericMethod(genericTypes);
             return method.Invoke(target, parameters);
         }
 
+        public void Dispose()
+        {
+
+        }
     }
 }

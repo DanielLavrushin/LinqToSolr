@@ -15,15 +15,11 @@ namespace LinqToSolr.Expressions
     {
         public int Skip { get; set; } = 0;
         public int Take { get; set; } = 100;
-
-        public bool IsSelect => Select?.Count > 0;
-        public bool IsSelectAsObject => Select?.Count > 1;
         public LambdaExpression SelectExpression { get; private set; }
-
-
         internal IDictionary<string, SortingDirection> Sorting { get; } = new Dictionary<string, SortingDirection>();
         internal IDictionary<string, MemberInfo> Select { get; } = new Dictionary<string, MemberInfo>();
         internal ICollection<string> Filters { get; } = new List<string>();
+        internal ICollection<string> Groups { get; } = new List<string>();
         internal void AddSorting(Expression expression, SortingDirection sortingDirection)
         {
 
@@ -64,6 +60,28 @@ namespace LinqToSolr.Expressions
             {
                 var member = (MemberExpression)SelectExpression.Body;
                 Select.Add(LinqToSolrFieldAttribute.GetFieldName(member.Member), member.Member);
+            }
+        }
+
+        internal void AddGrouping(Expression expression)
+        {
+            var lambda = expression as LambdaExpression;
+
+            var visitor = new CollectMembersVisitor();
+            visitor.Visit(lambda);
+            foreach (var member in visitor.Members)
+            {
+                Groups.Add(LinqToSolrFieldAttribute.GetFieldName(member));
+            }
+        }
+
+        class CollectMembersVisitor : ExpressionVisitor
+        {
+            public List<MemberInfo> Members { get; } = new List<MemberInfo>();
+            protected override Expression VisitMember(MemberExpression node)
+            {
+                Members.Add(node.Member);
+                return base.VisitMember(node);
             }
         }
     }

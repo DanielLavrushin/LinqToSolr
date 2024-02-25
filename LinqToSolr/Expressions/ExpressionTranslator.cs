@@ -129,6 +129,12 @@ namespace LinqToSolr.Expressions
                 return Visit(node.Arguments[0]);
             }
 
+            if (node.Method.Name == nameof(Enumerable.GroupBy))
+            {
+                _queryResult.AddGrouping(StripQuotes(node.Arguments[1]));
+                return Visit(node.Arguments[0]);
+            }
+
             throw new NotSupportedException($"The method '{node.Method.Name}' is not supported");
         }
         protected override Expression VisitBinary(BinaryExpression node)

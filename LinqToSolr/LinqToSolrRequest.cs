@@ -31,9 +31,20 @@ namespace LinqToSolr
             }
             QueryParameters["q"] = "*";
             QueryParameters["wt"] = "json";
-            QueryParameters["start"] = expressionQuery.Skip.ToString();
-            QueryParameters["rows"] = expressionQuery.Take.ToString();
-            QueryParameters["indent"] = false.ToString().ToLower();
+            if (expressionQuery.Groups.Any())
+            {
+                QueryParameters.Add("group.limit", expressionQuery.Take.ToString());
+                QueryParameters.Add("group.offset", expressionQuery.Skip.ToString());
+                QueryParameters.Add("group", "true");
+                foreach (var group in expressionQuery.Groups)
+                {
+                    QueryParameters.Add("group.field", group);
+                }
+            }
+            foreach (var filter in expressionQuery.Filters)
+            {
+                QueryParameters.Add("fq", filter);
+            }
 
             if (expressionQuery.Sorting.Count > 0)
             {
@@ -43,6 +54,10 @@ namespace LinqToSolr
             {
                 QueryParameters["fl"] = string.Join(",", expressionQuery.Select.Select(x => x.Key).ToArray());
             }
+
+            QueryParameters["start"] = expressionQuery.Skip.ToString();
+            QueryParameters["rows"] = expressionQuery.Take.ToString();
+            QueryParameters["indent"] = false.ToString().ToLower();
         }
 
         public Uri GetCoreUri()

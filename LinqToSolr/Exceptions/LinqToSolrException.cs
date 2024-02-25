@@ -5,7 +5,7 @@ namespace LinqToSolr
 {
     public class LinqToSolrException : Exception
     {
-        public LinqToSolrResponseError ResponseError { get; private set; }
+        internal LinqToSolrResponseError ResponseError { get; private set; }
 
         private LinqToSolrException(string message, LinqToSolrResponseError responseError)
             : base(message)

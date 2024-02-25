@@ -9,7 +9,7 @@ using LinqToSolr.Attributes;
 using System.Runtime.Serialization;
 namespace LinqToSolr.Extensions
 {
-    public static class JsonParser
+    static class JsonParser
     {
         [ThreadStatic] static Stack<List<string>> splitArrayPool;
         [ThreadStatic] static StringBuilder stringBuilder;
