@@ -26,6 +26,16 @@
       "stored": true
     },
     {
+      "name": "manager.id",
+      "type": "string",
+      "stored": true
+    },
+    {
+      "name": "manager.name",
+      "type": "string",
+      "stored": true
+    },
+    {
       "name": "age",
       "type": "pint",
       "stored": true

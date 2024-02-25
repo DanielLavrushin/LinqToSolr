@@ -17,6 +17,10 @@
     "registered": "2007-11-14T10:31:39 -01:00",
     "latitude": -35.935957,
     "longitude": 102.110269,
+    "manager": {
+      "id": "2b662e93-33c9-4ace-8181-28f5d9d2a80e",
+      "name": "Mable Savage"
+    },
     "tags": [
       "St. Pierre and Miquelon",
       "Hungary",
@@ -43,6 +47,10 @@
     "registered": "2022-02-05T09:37:36 -01:00",
     "latitude": -30.332098,
     "longitude": 76.619555,
+    "manager": {
+      "id": "eb87213c-f7ff-4832-80c3-07b461e85a7d",
+      "name": "Kris Cunningham"
+    },
     "tags": [
       "Malaysia",
       "Yugoslavia",
@@ -67,6 +75,10 @@
     "registered": "2020-04-24T05:28:17 -02:00",
     "latitude": 75.754907,
     "longitude": 134.024748,
+    "manager": {
+      "id": "1a0a39ad-378e-4a14-8971-0c6bfa8e567e",
+      "name": "Pace Castaneda"
+    },
     "tags": [
       "Monaco",
       "Cape Verde",
@@ -95,6 +107,10 @@
     "registered": "2017-01-29T09:12:02 -01:00",
     "latitude": 88.620735,
     "longitude": -157.201813,
+    "manager": {
+      "id": "2ec61072-dc81-4eba-958e-52355df345d5",
+      "name": "Charles Todd"
+    },
     "tags": [
       "Grenada",
       "Panama",
@@ -120,6 +136,10 @@
     "registered": "2014-02-19T12:29:47 -01:00",
     "latitude": -12.391115,
     "longitude": -15.545715,
+    "manager": {
+      "id": "74e75cdf-913c-4623-8282-560060717f0d",
+      "name": "Vaughan Hull"
+    },
     "tags": [
       "Andorra",
       "China",
