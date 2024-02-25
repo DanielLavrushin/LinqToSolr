@@ -38,8 +38,7 @@ namespace LinqToSolr.Providers
 
         public object Execute(Expression expression)
         {
-            var executeMethod = typeof(LinqToSolrProvider).GetMethod(nameof(ExecuteAsync), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(ElementType);
-            var task = (Task)executeMethod.Invoke(this, new[] { expression });
+            var task = InvokeGenericMethod(typeof(Task), nameof(ExecuteAsync), new[] { ElementType }, this, new[] { expression });
             return task.GetType().GetProperty("Result").GetValue(task);
         }
 
@@ -60,27 +59,28 @@ namespace LinqToSolr.Providers
 
         internal async Task<LinqToSolrResponse<TObject>> PrepareAndSendAsync<TObject>(LinqToSolrRequest request)
         {
-            var returnType = typeof(TObject);
-            if (request.Translated.IsSelect)
-            {
-                var isCollection = returnType.IsGenericType ? typeof(Enumerable).IsAssignableFrom(returnType.GetGenericTypeDefinition()) || typeof(ICollection).IsAssignableFrom(returnType.GetGenericTypeDefinition()) :
-                typeof(Enumerable).IsAssignableFrom(returnType);
-
-                var responseType = typeof(LinqToSolrResponse<>).MakeGenericType(
-                    isCollection ? typeof(TObject).GetGenericTypeDefinition().MakeGenericType(ElementType)
-                    : ElementType
-                    );
-
-                var sendMethod = GetType().GetMethod(nameof(SendAsync), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(responseType);
-                var task = (Task)sendMethod.Invoke(this, new[] { request });
-                await task.ConfigureAwait(false);
-                var result = task.GetType().GetProperty(nameof(Task<object>.Result)).GetValue(task);
-            }
-
-            return await SendAsync<TObject>(request);
+            var response = await PrepareAndSendAsync(request, typeof(TObject));
+            return response as LinqToSolrResponse<TObject>;
         }
 
-        internal async Task<LinqToSolrResponse<TObject>> SendAsync<TObject>(LinqToSolrRequest request)
+        internal async Task<object> PrepareAndSendAsync(LinqToSolrRequest request, Type returnType)
+        {
+            if (request.Translated.IsSelect)
+            {
+                var response = await SendAsync(request, returnType);
+                var documents = SelectDocuments(request, response);
+                var selectresponse = CreateFakeResponse(documents, returnType);
+
+                return selectresponse;
+            }
+            return await SendAsync(request, returnType);
+        }
+        internal Task<LinqToSolrResponse<TObject>> SendAsync<TObject>(LinqToSolrRequest request)
+        {
+            return SendAsync(request, typeof(TObject)) as Task<LinqToSolrResponse<TObject>>;
+        }
+
+        internal async Task<object> SendAsync(LinqToSolrRequest request, Type returnType)
         {
             using (var client = new HttpClient())
             {
@@ -93,7 +93,6 @@ namespace LinqToSolr.Providers
                 {
                     Content = null
                 };
-
                 var httpResponse = await client.SendAsync(httpRequestMessage);
                 var responseContent = await httpResponse.Content.ReadAsStringAsync();
 
@@ -102,12 +101,45 @@ namespace LinqToSolr.Providers
                     throw LinqToSolrException.ParseSolrErrorResponse(responseContent);
                 }
 
-                var response = JsonParser.FromJson<LinqToSolrResponse<TObject>>(responseContent);
-                response.Header.Status = System.Net.HttpStatusCode.OK;
-
+                var isCollection = returnType.IsGenericType ? typeof(Enumerable).IsAssignableFrom(returnType.GetGenericTypeDefinition()) || typeof(ICollection).IsAssignableFrom(returnType.GetGenericTypeDefinition()) : typeof(Enumerable).IsAssignableFrom(returnType);
+                var responseType = typeof(LinqToSolrResponse<>).MakeGenericType(isCollection ? returnType.GetGenericTypeDefinition().MakeGenericType(ElementType) : ElementType);
+                var response = JsonParser.FromJson(responseContent, responseType);
                 Debug.WriteLine(uriBuilder.Uri);
                 return response;
             }
         }
+
+        object CreateFakeResponse(object documents, Type returnType)
+        {
+            if (returnType == null) throw new ArgumentNullException(nameof(returnType));
+            var responseGenericType = typeof(LinqToSolrResponse<>).MakeGenericType(returnType);
+            var response = Activator.CreateInstance(responseGenericType);
+            response.GetType().GetProperty("Response").PropertyType.GetProperty("Result").SetValue(response.GetType().GetProperty("Response").GetValue(response), documents);
+            return response;
+        }
+
+        object SelectDocuments(LinqToSolrRequest request, object response)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (response == null) throw new ArgumentNullException(nameof(response));
+            var documentsType = response.GetType().GetProperty("Response").PropertyType.GetProperty("Result").PropertyType;
+            var elementType = documentsType.GetGenericArguments()[0];
+            var documents = response.GetType().GetProperty("Response").GetValue(response).GetType().GetProperty("Result").GetValue(response.GetType().GetProperty("Response").GetValue(response));
+
+            var sourceType = documents.GetType().GetGenericArguments()[0];
+            var resultType = request.Translated.SelectExpression.Body.Type;
+            var func = request.Translated.SelectExpression.Compile();
+
+            var selectedDocuments = InvokeGenericMethod(typeof(Enumerable), nameof(Enumerable.Select), new[] { sourceType, resultType }, null, new[] { documents, func });
+            var materializedResult = InvokeGenericMethod(typeof(Enumerable), nameof(Enumerable.ToList), new[] { resultType }, null, new[] { selectedDocuments });
+
+            return materializedResult;
+        }
+        private object InvokeGenericMethod(Type type, string methodName, Type[] genericTypes, object target, object[] parameters)
+        {
+            var method = type.GetMethods().First(m => m.Name == methodName && m.GetGenericArguments().Length == genericTypes.Length).MakeGenericMethod(genericTypes);
+            return method.Invoke(target, parameters);
+        }
+
     }
 }

@@ -4,22 +4,29 @@ using LinqToSolr.Tests.Models;
 namespace LinqToSolr.Tests
 {
     [TestClass]
-    public class SelectTests
+    public class SelectTests : BaseTest
     {
-        LinqToSolrService service;
-        ICollection<SolrDocument> localDocuments;
-        public SelectTests()
+        [TestMethod]
+        public async Task SelectSimpleDynamicToListTest()
         {
-            var config = new LinqToSolrConfiguration(new LinkToSolrEndpoint("http://localhost:8983/solr")).MapCoreFor<SolrDocument>("dummy");
-            service = new LinqToSolrService(config);
-       //     localDocuments = JsonParser.FromJson<List<SolrDocument>>(File.ReadAllText("dummy-data.json"));
+            var docs1 = await Service.AsQueryable<SolrDocument>().Select(x => x.Name).ToListAsync();
+            var docs2 = await Service.AsQueryable<SolrDocument>().Select(x => new { x.Index, x.Name }).ToListAsync();
+
+            Assert.IsNotNull(docs1, "The result should not be null");
+            Assert.IsNotNull(docs2, "The result should not be null");
+            Assert.IsTrue(docs1.Count > 0, "There should be at least one document");
+            Assert.IsTrue(docs2.Count > 0, "There should be at least one document");
         }
 
         [TestMethod]
-        public async Task SimpleSelectDynamicTest()
+        public async Task SelectWithWhereToStringListTest()
         {
-            var docs2 = await service.AsQueryable<SolrDocument>().Select(x => new { x.Index, x.Name }).ToListAsync();
-            var docs1 = await service.AsQueryable<SolrDocument>().Select(x => x.Name).ToListAsync();
+            var docs1 = await Service.AsQueryable<SolrDocument>().Take(50).Where(x => x.Name.StartsWith("A")).Select(x => x.Name).ToListAsync();
+
+            Assert.IsNotNull(docs1, "The result should not be null");
+            Assert.IsTrue(docs1.Count > 0, "There should be at least one document");
+            Assert.IsFalse(docs1.Any(x => string.IsNullOrWhiteSpace(x)), "There should not be any whitespace names");
+            Assert.IsTrue(docs1.All(x => x.StartsWith("A")), "All names should start with 'A'");
         }
 
     }

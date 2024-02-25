@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <RunConfiguration>
+    <MaxCpuCount>0</MaxCpuCount>
+  </RunConfiguration>
+  <TestRunParameters>
+    <Parameter name="solrUrl" value="http://localhost:8983/solr" />
+    <Parameter name="solrCore" value="dummy" />
+    <Parameter name="solrUser" value="" />
+    <Parameter name="solrPassword" value="" />
+  </TestRunParameters>
+  <LoggerRunSettings>
+    <Loggers>
+      <Logger friendlyName="console" enabled="True">
+        <Configuration>
+          <Verbosity>detailed</Verbosity>
+        </Configuration>
+      </Logger>
+    </Loggers>
+  </LoggerRunSettings>
+  <MSTest>
+    <Parallelize>
+      <Workers>32</Workers>
+      <Scope>MethodLevel</Scope>
+    </Parallelize>
+  </MSTest>
+</RunSettings>
