@@ -20,7 +20,6 @@ namespace LinqToSolr
             Uri uri = new Uri(solrUrl);
             string basePath = "/" + (uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? SOLRINSTANCE);
             Uri baseUri = new Uri(uri, basePath);
-
             string normalizedUri = baseUri.GetLeftPart(UriPartial.Authority) + basePath + "/";
             SolrUri = new Uri(normalizedUri);
         }

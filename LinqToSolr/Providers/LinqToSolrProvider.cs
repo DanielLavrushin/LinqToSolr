@@ -8,10 +8,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
-#if NETSTANDARD1_1_OR_GREATER
 using System.Net.Http;
 using System.Net.Http.Headers;
-#endif
 using System.Text;
 using System.Threading.Tasks;
 

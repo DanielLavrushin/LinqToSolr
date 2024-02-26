@@ -3,9 +3,7 @@ using LinqToSolr.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-#if !NETSTANDARD1_0
 using System.Net.Http;
-#endif
 using System.Reflection;
 
 namespace LinqToSolr.Expressions

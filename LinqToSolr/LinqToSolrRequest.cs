@@ -5,10 +5,8 @@ using System;
 using System.Net;
 using System.Collections.Specialized;
 using System.Linq;
-#if !NETSTANDARD1_0
 using System.Net.Http;
-#endif
-#if NETSTANDARD2_0_OR_GREATER
+#if !NETSTANDARD1_1 &&  !NETSTANDARD1_3 && !NETSTANDARD1_6
 using System.Web;
 #endif
 

@@ -6,7 +6,6 @@ namespace LinqToSolr.Tests
     public abstract class BaseTest
     {
         public TestContext TestContext { get; set; }
-        internal ICollection<SolrDocument> localDocuments;
         internal LinqToSolrService Service;
 
         public string SolrUrl;
