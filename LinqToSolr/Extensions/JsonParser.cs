@@ -6,7 +6,9 @@ using System.Text;
 using System.Linq;
 using System.ComponentModel;
 using LinqToSolr.Attributes;
+#if NETSTANDARD2_0_OR_GREATER
 using System.Runtime.Serialization;
+#endif
 namespace LinqToSolr.Extensions
 {
     static class JsonParser
@@ -150,7 +152,7 @@ namespace LinqToSolr.Extensions
             {
                 return new Guid(json.Replace("\"", ""));
             }
-            if (type.IsPrimitive)
+            if (type.IsPrimitive())
             {
                 var result = Convert.ChangeType(json, type, System.Globalization.CultureInfo.InvariantCulture);
                 return result;
@@ -171,7 +173,7 @@ namespace LinqToSolr.Extensions
             {
                 return null;
             }
-            if (type.IsEnum)
+            if (type.IsEnum())
             {
                 if (json[0] == '"')
                     json = json.Substring(1, json.Length - 2);
@@ -202,10 +204,10 @@ namespace LinqToSolr.Extensions
                 Type underlyingType = type.GetGenericArguments()[0];
                 return ParseValue(underlyingType, json);
             }
-            if (type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(List<>) || typeof(IEnumerable<>).IsAssignableFrom(type.GetGenericTypeDefinition())))
+            if (type.IsGenericType() && (type.GetGenericTypeDefinition() == typeof(List<>) || typeof(IEnumerable<>).IsAssignableFrom(type.GetGenericTypeDefinition())))
             {
                 Type listType = type.GetGenericArguments()[0];
-                if (type.IsInterface)
+                if (type.IsInterface())
                 {
                     type = typeof(List<>).MakeGenericType(listType);
                 }
@@ -219,7 +221,7 @@ namespace LinqToSolr.Extensions
                 splitArrayPool.Push(elems);
                 return list;
             }
-            if (type.IsGenericType && typeof(IDictionary<,>).IsAssignableFrom(type.GetGenericTypeDefinition()))
+            if (type.IsGenericType() && typeof(IDictionary<,>).IsAssignableFrom(type.GetGenericTypeDefinition()))
             {
                 Type keyType, valueType;
                 {
@@ -239,7 +241,7 @@ namespace LinqToSolr.Extensions
                 if (elems.Count % 2 != 0)
                     return null;
 
-                if (type.IsInterface)
+                if (type.IsInterface())
                 {
                     type = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
                 }
@@ -333,7 +335,7 @@ namespace LinqToSolr.Extensions
                 string name = member.Name;
                 if (member.IsDefined(typeof(LinqToSolrFieldAttribute), true))
                 {
-                    var dataMemberAttribute = (LinqToSolrFieldAttribute)Attribute.GetCustomAttribute(member, typeof(LinqToSolrFieldAttribute), true);
+                    var dataMemberAttribute = (LinqToSolrFieldAttribute)member.GetCustomAttribute(typeof(LinqToSolrFieldAttribute), true);
                     if (!string.IsNullOrEmpty(dataMemberAttribute.PropertyName))
                         name = dataMemberAttribute.PropertyName;
                 }
@@ -346,7 +348,11 @@ namespace LinqToSolr.Extensions
 
         static object ParseObject(Type type, string json)
         {
+#if NETSTANDARD2_0_OR_GREATER
             object instance = FormatterServices.GetUninitializedObject(type);
+#else
+            object instance = Activator.CreateInstance(type);
+#endif
 
             //The list is split into key/value pairs only, this means the split must be divisible by 2 to be valid JSON
             List<string> elems = Split(json);
@@ -357,6 +363,7 @@ namespace LinqToSolr.Extensions
             Dictionary<string, PropertyInfo> nameToProperty;
             if (!fieldInfoCache.TryGetValue(type, out nameToField))
             {
+
                 nameToField = CreateMemberNameDictionary(type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy));
                 fieldInfoCache.Add(type, nameToField);
             }

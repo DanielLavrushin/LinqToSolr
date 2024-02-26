@@ -1,4 +1,5 @@
 ﻿using LinqToSolr.Attributes;
+using LinqToSolr.Extensions;
 using System;
 using System.Collections;
 using System.ComponentModel;

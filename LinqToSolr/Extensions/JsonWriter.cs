@@ -142,11 +142,9 @@ namespace LinqToSolr.Extensions
                 stringBuilder.Append('{');
 
                 bool isFirst = true;
-#if NETSTANDARD1_3
-                FieldInfo[] fieldInfos = type.GetTypeInfo().DeclaredFields.ToArray();
-#else
+
                 FieldInfo[] fieldInfos = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy);
-#endif
+
                 for (int i = 0; i < fieldInfos.Length; i++)
                 {
                     if (fieldInfos[i].IsDefined(typeof(LinqToSolrFieldIgnoreAttribute), true))

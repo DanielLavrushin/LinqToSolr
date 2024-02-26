@@ -1,13 +1,17 @@
 ﻿using LinqToSolr.Expressions;
 using LinqToSolr.Extensions;
+using System.Reflection;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net;
+#if NETSTANDARD1_1_OR_GREATER
 using System.Net.Http;
-using System.Reflection;
+using System.Net.Http.Headers;
+#endif
 using System.Text;
 using System.Threading.Tasks;
 
@@ -25,8 +29,8 @@ namespace LinqToSolr.Providers
             ElementType = elementType;
             if (Service.Configuration.Endpoint.IsProtected)
             {
-                var byteArray = Encoding.ASCII.GetBytes($"{Service.Configuration.Endpoint.Username}:{Service.Configuration.Endpoint.Password}");
-                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                var byteArray = NetStandardSupport.GetAsciiBytes($"{Service.Configuration.Endpoint.Username}:{Service.Configuration.Endpoint.Password}");
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
             }
         }
 
@@ -108,12 +112,12 @@ namespace LinqToSolr.Providers
             var httpResponse = await httpClient.SendAsync(httpRequestMessage);
             var responseContent = await httpResponse.Content.ReadAsStringAsync();
 
-            if (httpResponse.StatusCode != System.Net.HttpStatusCode.OK)
+            if (httpResponse.StatusCode != HttpStatusCode.OK)
             {
                 throw LinqToSolrException.ParseSolrErrorResponse(responseContent);
             }
 
-            var isCollection = returnType.IsGenericType ? typeof(Enumerable).IsAssignableFrom(returnType.GetGenericTypeDefinition()) || typeof(ICollection).IsAssignableFrom(returnType.GetGenericTypeDefinition()) : typeof(Enumerable).IsAssignableFrom(returnType);
+            var isCollection = returnType.IsGenericType() ? typeof(Enumerable).IsAssignableFrom(returnType.GetGenericTypeDefinition()) || typeof(ICollection).IsAssignableFrom(returnType.GetGenericTypeDefinition()) : typeof(Enumerable).IsAssignableFrom(returnType);
 
             Type responseGenericType = request.Translated.Groups.Any() ? typeof(LinqToSolrGroupResponse<>) : typeof(LinqToSolrResponse<>);
 

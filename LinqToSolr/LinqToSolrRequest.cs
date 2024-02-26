@@ -2,16 +2,18 @@
 using LinqToSolr.Extensions;
 using LinqToSolr.Providers;
 using System;
+using System.Net;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Linq;
+#if !NETSTANDARD1_0
 using System.Net.Http;
-using System.Threading.Tasks;
+#endif
+#if NETSTANDARD2_0_OR_GREATER
 using System.Web;
+#endif
 
 namespace LinqToSolr
 {
-
     internal class LinqToSolrRequest
     {
         public TranslatedQuery Translated { get; }
