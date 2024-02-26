@@ -21,11 +21,13 @@ namespace LinqToSolr
         internal LinqToSolrQueriable(ILinqToSolrProvider provider) : this(provider, null)
         {
         }
+
         internal LinqToSolrQueriable(ILinqToSolrProvider provider, Expression expression)
         {
             Provider = provider;
             Expression = expression ?? Expression.Constant(this);
         }
+
         public IEnumerator<TObject> GetEnumerator()
         {
             return Provider.Execute<IEnumerable<TObject>>(Expression).GetEnumerator();

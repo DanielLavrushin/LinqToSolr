@@ -3,7 +3,7 @@ $solrCoreName = "dummy"
 $solrCofigs = Join-Path -Path $PSScriptRoot -ChildPath "solr"
 
 docker rm $solrContainer --force
-Remove-Item -Recurse -Force "$PSScriptRoot\solr\$solrCoreName"
+Remove-Item -Recurse -Force "$PSScriptRoot\solr\$solrCoreName" -ErrorAction SilentlyContinue
 $cmd = "docker run -d --name $solrContainer -p 8983:8983 -v $($solrCofigs -replace '\\', '/'):/var/solr/data solr"
 Write-Host $cmd -ForegroundColor Green
 Invoke-Expression $cmd

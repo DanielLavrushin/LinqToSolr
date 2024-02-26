@@ -10,15 +10,20 @@ namespace LinqToSolr.Extensions
 {
     public static class LinqExtensions
     {
-        public static IQueryable<T> GroupByFacets<T>(this IQueryable<T> query, params Expression<Func<T, object>>[] expression)
+
+
+        public static async Task<IDictionary<Expression<Func<T, object>>, object[]>> ToFacetsAsync<T>(this IQueryable<T> query, params Expression<Func<T, object>>[] expression)
         {
             if (query.Provider is ILinqToSolrProvider provider)
             {
                 foreach (var expr in expression)
                 {
-                    //   query.SolrQuery.Facets.Add(LinqToSolrFacet.Create(expr));
+                    provider.Translated.AddFacet(expr);
+
                 }
-                return query;
+
+                var result = await provider.ExecuteAsync<IDictionary<Expression<Func<T, object>>, object[]>>(query.Expression);
+                return result;
             }
             else
             {

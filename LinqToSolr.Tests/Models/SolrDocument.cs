@@ -30,6 +30,7 @@ namespace LinqToSolr.Tests.Models
         public string Company { get; set; }
         public string Email { get; set; }
         public string Picture { get; set; }
+        [LinqToSolrField("age")]
         public int Age { get; set; }
         [LinqToSolrField("balance")]
         public decimal Balance { get; set; }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using LinqToSolr.Expressions;
 
 namespace LinqToSolr.Providers
 {
@@ -12,5 +13,6 @@ namespace LinqToSolr.Providers
         Type ElementType { get; }
         ILinqToSolrService Service { get; }
         Task<TResult> ExecuteAsync<TResult>(Expression expression);
+        ITranslatedQuery Translated { get; }
     }
 }

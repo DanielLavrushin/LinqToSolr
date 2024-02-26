@@ -16,11 +16,11 @@ namespace LinqToSolr
 {
     internal class LinqToSolrRequest
     {
-        public TranslatedQuery Translated { get; }
+        public ITranslatedQuery Translated { get; }
         public NameValueCollection QueryParameters { get; private set; }
         public HttpMethod Method { get; }
         ILinqToSolrProvider _provider;
-        public LinqToSolrRequest(ILinqToSolrProvider provider, TranslatedQuery expressionQuery, HttpMethod method)
+        public LinqToSolrRequest(ILinqToSolrProvider provider, ITranslatedQuery expressionQuery, HttpMethod method)
         {
             Translated = expressionQuery;
             Method = method;
@@ -33,6 +33,8 @@ namespace LinqToSolr
             }
             QueryParameters["q"] = "*";
             QueryParameters["wt"] = "json";
+            QueryParameters["start"] = expressionQuery.Skip.ToString();
+            QueryParameters["rows"] = expressionQuery.Take.ToString();
             if (expressionQuery.Groups.Any())
             {
                 QueryParameters.Add("group.limit", expressionQuery.Take.ToString());
@@ -43,6 +45,19 @@ namespace LinqToSolr
                     QueryParameters.Add("group.field", group);
                 }
             }
+
+            if (expressionQuery.Facets.Count > 0)
+            {
+                QueryParameters.Add("facet", "true");
+                QueryParameters.Add("facet.limit", expressionQuery.Take.ToString());
+                QueryParameters.Add("facet.mincount", "1");
+                QueryParameters["rows"] = "0";
+                foreach (var facet in expressionQuery.Facets)
+                {
+                    QueryParameters.Add("facet.field", facet.Key);
+                }
+            }
+
             foreach (var filter in expressionQuery.Filters)
             {
                 QueryParameters.Add("fq", filter);
@@ -52,13 +67,12 @@ namespace LinqToSolr
             {
                 QueryParameters["sort"] = string.Join(",", expressionQuery.Sorting.Reverse().Select(x => $"{x.Key} {x.Value}").ToArray());
             }
+
             if (expressionQuery.Select.Count > 0)
             {
                 QueryParameters["fl"] = string.Join(",", expressionQuery.Select.Select(x => x.Key).ToArray());
             }
 
-            QueryParameters["start"] = expressionQuery.Skip.ToString();
-            QueryParameters["rows"] = expressionQuery.Take.ToString();
             QueryParameters["indent"] = false.ToString().ToLower();
         }
 

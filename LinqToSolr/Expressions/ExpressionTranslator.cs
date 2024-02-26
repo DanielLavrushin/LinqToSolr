@@ -18,13 +18,13 @@ namespace LinqToSolr.Expressions
     {
         Expression _expression { get; }
         StringBuilder q { get; set; }
-        TranslatedQuery _queryResult;
+        ITranslatedQuery _queryResult;
         internal ExpressionTranslator(Expression expression)
         {
             _expression = expression;
 
         }
-        public TranslatedQuery Translate(Expression expression, TranslatedQuery queryResult)
+        public ITranslatedQuery Translate(Expression expression, ITranslatedQuery queryResult)
         {
             _queryResult = queryResult;
             q = new StringBuilder();

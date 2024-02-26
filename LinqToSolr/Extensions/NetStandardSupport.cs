@@ -126,25 +126,25 @@ namespace LinqToSolr.Extensions
             throw new NotImplementedException();
         }
     }
-#endif
+    internal class StringContent : HttpContent
+    {
+        public StringContent(string content, Encoding encoding, string contentType)
+        {
 
-#if NETSTANDARD1_0
+        }
+    }
     internal class HttpRequestHeaders
     {
         public AuthenticationHeaderValue Authorization { get; set; }
     }
-#endif
 
-#if NETSTANDARD1_0
     internal class AuthenticationHeaderValue
     {
         public AuthenticationHeaderValue(string scheme, string parameter)
         {
         }
     }
-#endif
 
-#if NETSTANDARD1_0
     internal class HttpRequestMessage : IDisposable
     {
         public HttpContent Content { get; set; }
@@ -156,9 +156,7 @@ namespace LinqToSolr.Extensions
         {
         }
     }
-#endif
 
-#if NETSTANDARD1_0
     internal class HttpResponseMessage : IDisposable
     {
         public HttpStatusCode StatusCode { get; set; }

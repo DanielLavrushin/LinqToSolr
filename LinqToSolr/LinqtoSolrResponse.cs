@@ -23,6 +23,7 @@ namespace LinqToSolr
     public interface ILinqToSolrFinalResponse<TObject>
     {
         TObject GetDocuments();
+        void SetDcouments(object documents);
 
     }
     internal class LinqToSolrResponse<TObject> : LinqToSolrResponseBase, ILinqToSolrFinalResponse<TObject>
@@ -33,6 +34,11 @@ namespace LinqToSolr
         public TObject GetDocuments()
         {
             return Response.Result;
+        }
+
+        public void SetDcouments(object documents)
+        {
+            Response.Result = (TObject)documents;
         }
     }
 
@@ -53,7 +59,34 @@ namespace LinqToSolr
         {
             return Grouped.FirstOrDefault().Value.Groups.FirstOrDefault().Result.Documents;
         }
+
+        public void SetDcouments(object documents)
+        {
+            throw new NotImplementedException();
+        }
     }
+
+    internal class LinqToSolrFacetsResponse<TObject> : LinqToSolrResponseBase, ILinqToSolrFinalResponse<TObject>
+    {
+        [LinqToSolrField("facet_counts")]
+        public LinqToSolrFacetFields Result { get; set; }
+
+        public TObject GetDocuments()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetDcouments(object documents)
+        {
+            throw new NotImplementedException();
+        }
+    }
+    internal class LinqToSolrFacetFields
+    {
+        [LinqToSolrField("facet_fields")]
+        public IDictionary<string, object[]> FacetFields { get; set; }
+    }
+
     internal class LinqToSolrResponseGroupField<TObject>
     {
         [LinqToSolrField("matches")]
