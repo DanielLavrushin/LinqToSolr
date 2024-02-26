@@ -3,6 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+#if !NETSTANDARD1_0
+using System.Net.Http;
+#endif
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -57,6 +60,18 @@ namespace LinqToSolr.Extensions
                 throw new InvalidOperationException("The provider is not supported for async operations.");
             }
 
+        }
+        public static IQueryable<TSource> AsPostMethod<TSource>(this IQueryable<TSource> query)
+        {
+            if (query.Provider is ILinqToSolrProvider provider)
+            {
+                provider.Translated.Method = HttpMethod.Post;
+                return query;
+            }
+            else
+            {
+                throw new InvalidOperationException("The provider is not supported for async operations.");
+            }
         }
     }
 }

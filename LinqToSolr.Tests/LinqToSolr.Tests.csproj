@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net45;net462;netcoreapp2.1;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
@@ -29,6 +29,22 @@
     <PackageReference Include="MSTest.TestAdapter" Version="3.2.2" />
     <PackageReference Include="MSTest.TestFramework" Version="3.2.2" />
   </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework) == 'net45'">
+    <PackageReference Remove="MSTest.TestFramework" />
+    <PackageReference Remove="MSTest.TestAdapter"/>
+    <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
+    <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
+  </ItemGroup>
+
+    <ItemGroup Condition="$(TargetFramework) == 'net462'">
+    <PackageReference Remove="MSTest.TestFramework" />
+    <PackageReference Remove="MSTest.TestAdapter"/>
+    <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
+    <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
+  </ItemGroup>
+    <ItemGroup Condition="$(TargetFramework) == 'netcoreapp2.1'">
+  <ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\LinqToSolr\LinqToSolr.csproj" />

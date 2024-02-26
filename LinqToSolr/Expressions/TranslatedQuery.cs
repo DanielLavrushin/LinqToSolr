@@ -1,7 +1,11 @@
 ﻿using LinqToSolr.Attributes;
+using LinqToSolr.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+#if !NETSTANDARD1_0
+using System.Net.Http;
+#endif
 using System.Reflection;
 
 namespace LinqToSolr.Expressions
@@ -15,7 +19,7 @@ namespace LinqToSolr.Expressions
     {
         int Skip { get; set; }
         int Take { get; set; }
-
+        HttpMethod Method { get; set; }
         LambdaExpression SelectExpression { get; }
         IDictionary<string, SortingDirection> Sorting { get; }
         IDictionary<string, MemberInfo> Select { get; }
@@ -29,6 +33,7 @@ namespace LinqToSolr.Expressions
     }
     internal class TranslatedQuery : ITranslatedQuery
     {
+        public HttpMethod Method { get; set; } = HttpMethod.Get;
         public int Skip { get; set; } = 0;
         public int Take { get; set; } = 100;
         public LambdaExpression SelectExpression { get; private set; }

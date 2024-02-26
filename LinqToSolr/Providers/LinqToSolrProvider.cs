@@ -64,7 +64,7 @@ namespace LinqToSolr.Providers
         {
             var translator = new ExpressionTranslator<TResult>(expression);
             var query = translator.Translate(expression, Translated);
-            var request = new LinqToSolrRequest(this, query, HttpMethod.Get);
+            var request = new LinqToSolrRequest(this, query);
             var response = await PrepareAndSendAsync<TResult>(request);
             var docs = response.GetDocuments();
             return docs;
@@ -111,10 +111,11 @@ namespace LinqToSolr.Providers
             var uriBuilder = new UriBuilder(url);
             uriBuilder.Query = request.QueryParameters.ToString();
 
+            var finalUri = Translated.Method == HttpMethod.Get ? uriBuilder.Uri : url;
 
-            var httpRequestMessage = new HttpRequestMessage(request.Method, uriBuilder.Uri)
+            var httpRequestMessage = new HttpRequestMessage(Translated.Method, finalUri)
             {
-                Content = (request.Method != HttpMethod.Get ? new StringContent(uriBuilder.Query, Encoding.UTF8, "application/x-www-form-urlencoded") : null)
+                Content = (Translated.Method != HttpMethod.Get ? new StringContent(uriBuilder.Query.Substring(1), Encoding.UTF8, "application/x-www-form-urlencoded") : null)
             };
             var httpResponse = await httpClient.SendAsync(httpRequestMessage);
             var responseContent = await httpResponse.Content.ReadAsStringAsync();

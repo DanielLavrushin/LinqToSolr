@@ -18,12 +18,10 @@ namespace LinqToSolr
     {
         public ITranslatedQuery Translated { get; }
         public NameValueCollection QueryParameters { get; private set; }
-        public HttpMethod Method { get; }
         ILinqToSolrProvider _provider;
-        public LinqToSolrRequest(ILinqToSolrProvider provider, ITranslatedQuery expressionQuery, HttpMethod method)
+        public LinqToSolrRequest(ILinqToSolrProvider provider, ITranslatedQuery expressionQuery)
         {
             Translated = expressionQuery;
-            Method = method;
             _provider = provider;
 
             QueryParameters = HttpUtility.ParseQueryString(string.Empty);
