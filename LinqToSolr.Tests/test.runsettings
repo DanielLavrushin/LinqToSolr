@@ -6,8 +6,8 @@
   <TestRunParameters>
     <Parameter name="solrUrl" value="http://localhost:8983/solr" />
     <Parameter name="solrCore" value="dummy" />
-    <Parameter name="solrUser" value="" />
-    <Parameter name="solrPassword" value="" />
+    <Parameter name="solrUser" value="admin" />
+    <Parameter name="solrPassword" value="12345" />
   </TestRunParameters>
   <LoggerRunSettings>
     <Loggers>

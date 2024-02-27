@@ -17,7 +17,7 @@ namespace LinqToSolr.Providers
 {
     public class LinqToSolrProvider : ILinqToSolrProvider, IDisposable
     {
-        private static readonly HttpClient httpClient = new HttpClient();
+        private readonly HttpClient httpClient = new HttpClient();
         public Type ElementType { get; }
         public ILinqToSolrService Service { get; }
 
@@ -27,12 +27,13 @@ namespace LinqToSolr.Providers
         {
             Service = service;
             ElementType = elementType;
-            if (Service.Configuration.Endpoint.IsProtected)
+            if (Service.Configuration.Endpoint.IsProtected && httpClient.DefaultRequestHeaders.Authorization == null)
             {
                 var byteArray = NetStandardSupport.GetAsciiBytes($"{Service.Configuration.Endpoint.Username}:{Service.Configuration.Endpoint.Password}");
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
             }
             Translated = new TranslatedQuery();
+
         }
 
         public IQueryable CreateQuery(Expression expression)
@@ -116,7 +117,15 @@ namespace LinqToSolr.Providers
             var httpResponse = await httpClient.SendAsync(httpRequestMessage);
             var responseContent = await httpResponse.Content.ReadAsStringAsync();
 
-            if (httpResponse.StatusCode != HttpStatusCode.OK)
+            if (httpResponse.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                throw new UnauthorizedAccessException("401: Unauthorized access to Solr server. Check your credentials and try again.");
+            }
+            else if (httpResponse.StatusCode == HttpStatusCode.Forbidden)
+            {
+                throw new UnauthorizedAccessException("403: Forbidden access to Solr server. Check your credentials and try again.");
+            }
+            else if (httpResponse.StatusCode != HttpStatusCode.OK)
             {
                 throw LinqToSolrException.ParseSolrErrorResponse(responseContent);
             }

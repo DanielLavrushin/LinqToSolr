@@ -8,21 +8,21 @@ namespace LinqToSolr.Tests
         public TestContext TestContext { get; set; }
         internal LinqToSolrService Service;
 
-        public string SolrUrl;
-        public string SolrCore;
-        public string SolrUser;
-        public string SolrPassword;
+        public string solrUrl;
+        public string solrCore;
+        public string solrUser;
+        public string solrPassword;
         public ILinqToSolrQueriable<SolrDocument> Query;
         [TestInitialize]
         public void Initialize()
         {
-            SolrUrl = TestContext.Properties["solrUrl"]?.ToString();
-            SolrCore = TestContext.Properties["solrCore"]?.ToString();
-            SolrUser = TestContext.Properties["solrUser"]?.ToString();
-            SolrPassword = TestContext.Properties["solrPassword"]?.ToString();
-            var config = new LinqToSolrConfiguration(new LinkToSolrEndpoint(SolrUrl)).MapCoreFor<SolrDocument>(SolrCore);
+            solrUrl = TestContext.Properties["solrUrl"]?.ToString();
+            solrCore = TestContext.Properties["solrCore"]?.ToString();
+            solrUser = TestContext.Properties["solrUser"]?.ToString();
+            solrPassword = TestContext.Properties["solrPassword"]?.ToString();
+            var config = new LinqToSolrConfiguration(new LinkToSolrEndpoint(solrUrl, solrUser, solrPassword)).MapCoreFor<SolrDocument>(solrCore);
             Service = new LinqToSolrService(config);
-            Query = Service.AsQueryable<SolrDocument>() as ILinqToSolrQueriable<SolrDocument> ;
+            Query = Service.AsQueryable<SolrDocument>() as ILinqToSolrQueriable<SolrDocument>;
         }
     }
 }

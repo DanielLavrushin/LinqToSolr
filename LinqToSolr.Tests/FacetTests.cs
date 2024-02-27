@@ -9,7 +9,7 @@ namespace LinqToSolr.Tests
         [TestMethod]
         public async Task FacetSelectTest()
         {
-            var docs = await Service.AsQueryable<SolrDocument>().ToFacetsAsync(x => x.IsActive, x => x.Age);
+            var docs = await Query.ToFacetsAsync(x => x.IsActive, x => x.Age);
             var activelist = docs[x => x.IsActive].Cast<bool>();
             var ageslist = docs[x => x.Age].Cast<int>();
             Assert.IsNotNull(docs, "The result should not be null");
