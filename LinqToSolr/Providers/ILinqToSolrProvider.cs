@@ -13,6 +13,7 @@ namespace LinqToSolr.Providers
         Type ElementType { get; }
         ILinqToSolrService Service { get; }
         Task<TResult> ExecuteAsync<TResult>(Expression expression);
+        Task<ILinqToSolrFinalResponse<TSource>> AddOrUpdateAsync<TSource>(params TSource[] documents);
         ITranslatedQuery Translated { get; }
     }
 }

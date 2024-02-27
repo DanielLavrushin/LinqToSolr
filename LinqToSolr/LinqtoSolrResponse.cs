@@ -4,6 +4,7 @@ using LinqToSolr.Providers;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Net;
 
@@ -25,6 +26,23 @@ namespace LinqToSolr
         TObject GetDocuments();
         void SetDcouments(object documents);
 
+    }
+    internal class LinqToSolrUpdateResponse<TObject> : LinqToSolrResponseBase, ILinqToSolrFinalResponse<TObject>
+    {
+
+        public bool Success => Header.Status == HttpStatusCode.OK;
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public TObject GetDocuments()
+        {
+            throw new NotImplementedException();
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void SetDcouments(object documents)
+        {
+            throw new NotImplementedException();
+        }
     }
     internal class LinqToSolrResponse<TObject> : LinqToSolrResponseBase, ILinqToSolrFinalResponse<TObject>
     {

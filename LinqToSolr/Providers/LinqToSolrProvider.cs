@@ -101,19 +101,17 @@ namespace LinqToSolr.Providers
 
         internal Task<ILinqToSolrFinalResponse<TObject>> SendAsync<TObject>(LinqToSolrRequest request)
         {
+
             return SendAsync(request, typeof(TObject)) as Task<ILinqToSolrFinalResponse<TObject>>;
         }
         internal async Task<object> SendAsync(LinqToSolrRequest request, Type returnType)
         {
-            var url = request.GetCoreUri();
-            var uriBuilder = new UriBuilder(url);
-            uriBuilder.Query = request.ParseQueryString();
+            var uri = request.GetFinalUri();
+            var method = Translated.Method == HttpMethod.Get || Translated.Method == HttpMethod.Delete || Translated.Method == HttpMethod.Delete ? Translated.Method : HttpMethod.Post;
 
-            var finalUri = Translated.Method == HttpMethod.Get ? uriBuilder.Uri : url;
-
-            var httpRequestMessage = new HttpRequestMessage(Translated.Method, finalUri)
+            var httpRequestMessage = new HttpRequestMessage(method, uri)
             {
-                Content = (Translated.Method != HttpMethod.Get ? new StringContent(uriBuilder.Query.Substring(1), Encoding.UTF8, "application/x-www-form-urlencoded") : null)
+                Content = (Translated.Method != HttpMethod.Get ? new StringContent(request.Body, Encoding.UTF8, request.ContentType) : null)
             };
             var httpResponse = await httpClient.SendAsync(httpRequestMessage);
             var responseContent = await httpResponse.Content.ReadAsStringAsync();
@@ -139,8 +137,14 @@ namespace LinqToSolr.Providers
                 response = InvokeGenericMethod(GetType(), nameof(FaceDocuments), new[] { returnType, ElementType }, this, new[] { response, request });
             }
 
-            Debug.WriteLine(uriBuilder.Uri);
+            Debug.WriteLine(uri);
             return response;
+        }
+
+        public async Task<ILinqToSolrFinalResponse<TSource>> AddOrUpdateAsync<TSource>(params TSource[] documents)
+        {
+            var request = LinqToSolrRequest.InitUpdate(this, documents);
+            return await SendAsync(request, typeof(TSource)) as ILinqToSolrFinalResponse<TSource>;
         }
 
         object CreateFakeResponse(object documents, Type returnType, Type responseType = null)
@@ -157,7 +161,9 @@ namespace LinqToSolr.Providers
         {
             if (returnType == null) throw new ArgumentNullException(nameof(returnType));
 
-            var responseGenericType = request.Translated.Facets.Any() ? typeof(LinqToSolrFacetsResponse<>) : request.Translated.Groups.Any() ? typeof(LinqToSolrGroupResponse<>) : typeof(LinqToSolrResponse<>);
+            var responseGenericType = request.Translated.Facets.Any() ? typeof(LinqToSolrFacetsResponse<>) : request.Translated.Groups.Any() ? typeof(LinqToSolrGroupResponse<>) :
+                Translated.Method == HttpMethod.Put ? typeof(LinqToSolrUpdateResponse<>) :
+                typeof(LinqToSolrResponse<>);
             var baseElementType = request.Translated.Facets.Any() ? returnType : returnType.IsGenericType() ? returnType.GetGenericTypeDefinition().MakeGenericType(ElementType) : ElementType;
 
             var responseType = responseGenericType.MakeGenericType(baseElementType);

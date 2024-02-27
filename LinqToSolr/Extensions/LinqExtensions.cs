@@ -14,7 +14,21 @@ namespace LinqToSolr.Extensions
     public static class LinqExtensions
     {
 
-
+        public static async Task<bool> AddOrUpdateAsync<TSource>(this IQueryable<TSource> query, params TSource[] documents)
+        {
+            if (query.Provider is ILinqToSolrProvider provider)
+            {
+                var prevMethod = provider.Translated.Method;
+                provider.Translated.Method = HttpMethod.Put;
+                var result = await provider.AddOrUpdateAsync(documents) as LinqToSolrUpdateResponse<TSource>;
+                provider.Translated.Method = prevMethod;
+                return result.Success;
+            }
+            else
+            {
+                throw new InvalidOperationException("The provider is not supported for async operations.");
+            }
+        }
         public static async Task<IDictionary<Expression<Func<T, object>>, object[]>> ToFacetsAsync<T>(this IQueryable<T> query, params Expression<Func<T, object>>[] expression)
         {
             if (query.Provider is ILinqToSolrProvider provider)

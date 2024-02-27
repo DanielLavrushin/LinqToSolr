@@ -6,6 +6,8 @@ using System.Text;
 using System.Linq;
 using System.ComponentModel;
 using LinqToSolr.Attributes;
+using System.Net;
+
 #if NETSTANDARD2_0_OR_GREATER
 using System.Runtime.Serialization;
 #endif
@@ -117,6 +119,16 @@ namespace LinqToSolr.Extensions
 
         internal static object ParseValue(Type type, string json)
         {
+            //a fix for solr status = 0 => 200
+            if (type == typeof(HttpStatusCode))
+            {
+                var statusCode = int.Parse(json);
+                if (statusCode == 0)
+                {
+                    return HttpStatusCode.OK;
+                }
+                return (HttpStatusCode)statusCode;
+            }
             if (type == typeof(string))
             {
                 if (json.Length <= 2)

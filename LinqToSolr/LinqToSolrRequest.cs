@@ -16,6 +16,21 @@ namespace LinqToSolr
     {
         public ITranslatedQuery Translated { get; }
         public NameValueCollection QueryParameters { get; private set; }
+        public string Body { get; set; }
+        public string ContentType
+        {
+            get
+            {
+                var contentType = "application/json";
+
+                if (Translated.Method == HttpMethod.Post)
+                {
+                    contentType = "application/x-www-form-urlencoded";
+                }
+
+                return contentType;
+            }
+        }
         ILinqToSolrProvider _provider;
         public LinqToSolrRequest(ILinqToSolrProvider provider, ITranslatedQuery expressionQuery)
         {
@@ -70,13 +85,49 @@ namespace LinqToSolr
             }
 
             QueryParameters["indent"] = false.ToString().ToLower();
+            if (expressionQuery.Method == HttpMethod.Post)
+            {
+                Body = this.ParseQueryString();
+            }
         }
 
         public Uri GetCoreUri()
         {
+            var endpointMethod = "/select";
+            if (Translated.Method == HttpMethod.Put || Translated.Method == HttpMethod.Delete)
+            {
+                endpointMethod = "/update";
+            }
             var solrCore = _provider.Service.Configuration.GetCore(_provider.ElementType);
-            var solrUri = new Uri(_provider.Service.Configuration.Endpoint.SolrUri, $"{solrCore}/select");
+            var solrUri = new Uri(_provider.Service.Configuration.Endpoint.SolrUri, $"{solrCore}{endpointMethod}");
             return solrUri;
+        }
+        public Uri GetFinalUri()
+        {
+            var uri = GetCoreUri();
+            var uriBuilder = new UriBuilder(uri);
+            uriBuilder.Query = this.ParseQueryString();
+            return Translated.Method == HttpMethod.Post ? uri : uriBuilder.Uri;
+        }
+        internal static LinqToSolrRequest InitUpdate<TSource>(ILinqToSolrProvider provider, TSource[] documents)
+        {
+            var translated = new TranslatedQuery() { Method = HttpMethod.Put };
+            var request = new LinqToSolrRequest(provider, translated);
+            request.QueryParameters = HttpUtility.ParseQueryString(string.Empty);
+            request.QueryParameters.Add("commit", "true");
+            request.QueryParameters.Add("softCommit", "true");
+            request.QueryParameters.Add("wt", "json");
+            request.QueryParameters.Add("versions", "true");
+            request.QueryParameters.Add("overwrite", "true");
+            if (documents != null && documents.Any())
+            {
+                request.Body = JsonWriter.ToJson(documents);
+            }
+            else
+            {
+                request.Body = null;
+            }
+            return request;
         }
     }
 

@@ -7,12 +7,11 @@ using System.Threading.Tasks;
 
 namespace LinqToSolr.Tests.Models
 {
-    internal class SolrDocument
+    public class SolrDocument
     {
         [LinqToSolrField("id")]
         public Guid Id { get; set; }
-        [LinqToSolrField("guid")]
-        public Guid Guid { get; set; }
+
         [LinqToSolrField("index")]
         public int Index { get; set; }
 
@@ -28,7 +27,9 @@ namespace LinqToSolr.Tests.Models
         public string Gender { get; set; }
         [LinqToSolrField("company")]
         public string Company { get; set; }
+        [LinqToSolrField("email")]
         public string Email { get; set; }
+        [LinqToSolrField("picture")]
         public string Picture { get; set; }
         [LinqToSolrField("age")]
         public int Age { get; set; }
@@ -36,8 +37,10 @@ namespace LinqToSolr.Tests.Models
         public decimal Balance { get; set; }
         [LinqToSolrField("address")]
         public string Address { get; set; }
+        [LinqToSolrField("latitude")]
         public double Latitude { get; set; }
-        public string Longitude { get; set; }
+        [LinqToSolrField("longitude")]
+        public double Longitude { get; set; }
         [LinqToSolrField("tags")]
         public string[] Tags { get; set; }
 
