@@ -16,12 +16,20 @@ namespace LinqToSolr.Extensions
     {
         public static string ParseQueryString(this LinqToSolrRequest request)
         {
-            var str = string.Empty;
+#if NET45 || NET46 || NETSTANDARD1_0 || NETSTANDARD1_3 || NETSTANDARD1_6
+            var parameters = new List<string>();
             foreach (var key in request.QueryParameters.AllKeys)
             {
-                str += key + "=" + request.QueryParameters.GetValues(key) + "&";
+                foreach (var value in request.QueryParameters.GetValues(key))
+                {
+                    parameters.Add(key + "=" + WebUtility.UrlEncode(value));
+                }
             }
-            return str;
+            return string.Join("&", parameters);
+#else
+      return request.QueryParameters.ToString();
+#endif
+
         }
 
 #if NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
@@ -160,7 +168,7 @@ namespace LinqToSolr.Extensions
     }
 
 
-#if  NET45 || NET46 || NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
+#if NET45 || NET46 || NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
     internal static class HttpUtility
     {
         public static NameValueCollection ParseQueryString(string queryString)

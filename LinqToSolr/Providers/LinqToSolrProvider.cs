@@ -107,7 +107,7 @@ namespace LinqToSolr.Providers
         {
             var url = request.GetCoreUri();
             var uriBuilder = new UriBuilder(url);
-            uriBuilder.Query = request.QueryParameters.ToString();
+            uriBuilder.Query = request.ParseQueryString();
 
             var finalUri = Translated.Method == HttpMethod.Get ? uriBuilder.Uri : url;
 
