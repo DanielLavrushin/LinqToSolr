@@ -1,231 +1,174 @@
 # LinqToSolr
-![](https://img.shields.io/badge/.NET%203.5-compatible-green.svg)
-![](https://img.shields.io/badge/.NET%204-compatible-green.svg)
-![](https://img.shields.io/badge/.NET%204.5-compatible-green.svg)
-![](https://img.shields.io/badge/.NET%204.6.1-compatible-green.svg)
 
-![](https://img.shields.io/badge/.NET%20Core%201.0-compatible-orange.svg)
-![](https://img.shields.io/badge/.NET%20Core%201.1-compatible-orange.svg)
-![](https://img.shields.io/badge/.NET%20Standard%201.6&2.0-compatible-orange.svg)
+![](https://img.shields.io/badge/net8.0-compatible-green.svg) ![](https://img.shields.io/badge/netstandard2.1-compatible-green.svg) ![](https://img.shields.io/badge/netstandard2.0-compatible-green.svg) ![](https://img.shields.io/badge/netstandard1.6-compatible-green.svg) ![](https://img.shields.io/badge/netstandard1.3-compatible-green.svg) ![](https://img.shields.io/badge/netstandard1.2-compatible-green.svg) ![](https://img.shields.io/badge/netstandard1.1-compatible-green.svg) ![](https://img.shields.io/badge/net45-compatible-green.svg)
 
-![](https://img.shields.io/badge/Portable%20(Profile259)-compatible-blue.svg)
-![](https://img.shields.io/badge/Portable%20(Profile328)-compatible-blue.svg)
+LinqToSolr is an intuitive and lightweight C# library designed to enhance Solr queries with the power of Linq. It seamlessly integrates Solr search capabilities into .NET applications, facilitating cleaner and more maintainable code. LinqToSolr is suitable for developing complex search solutions or simplifying query logic.
 
-This is a lightwave C# library which provides Linq support for Solr.
-LinqToSolr implements IQueriable<> interface, which allows you to call Solr API with linq expressions directly.
-[NUGET Package](https://www.nuget.org/packages/LinqToSolr/)
-> PM> Install-Package LinqToSolr
+nuget package:
+[![](https://img.shields.io/badge/nuget.org-package-blue.svg)](https://www.nuget.org/packages/LinqToSolr/)
+
+To install:
+
+```dotnet
+dotnet add package LinqToSolr
+```
 
 ## Supported Methods
-* Where
-* First
-* FirstOrDefault
-* Select
-* GroupBy
-* GroupByFacets
-* ExcludeFacetFromQuery
-* Take
-* Skip
-* OrderBy
-* ThenBy
-* OrderByDescending
-* ThenByDescending
 
-## How to use
-First, create a model Class which will represent your Solr Document
+The library supports a variety of Linq methods, including but not limited to:
 
-```c#
+- `Where`
+- `First`
+- `FirstOrDefault`
+- `Select`
+- `Contains`
+- `Array.Contains(solrField)`
+- `StartsWith`
+- `EndsWith`
+- `GroupBy`
+- `Take`
+- `Skip`
+- `OrderBy`
+- `ThenBy`
+- `OrderByDescending`
+- `ThenByDescending`
+- `ToListAsync`
+- `AddOrUpdateAsync`
+- `DeleteAsync`
 
+## Usage Instructions
+
+### Defining a Model
+
+First, define a model class to represent your Solr document:
+
+```csharp
 public class MyProduct{
   public int Id{get;set;}
+
+  [LinqToSolrField("username")]
   public string Name{get;set}
   public string Group{get;set}
+
+  [LinqToSolrField("deleted")]
   public bool IsDeleted{get;set}
+  public string[] Tags{get;set;}
+
+  [LinqToSolrFieldIgnore]
+  public string CustomField{}
 }
-
 ```
 
-Then initialize a configuration class for a serivce
+### Configuration
 
-```c#
+Initialize a configuration class for the service:
 
-var solrConfig = new LinqToSolrRequestConfiguration("http:/localhost:1433/") // url to solr instance
-                .MapIndexFor<MyProduct>("MyProductIndex"); // the way to map your model to Solr Index
-
+```csharp
+var solrConfig = new LinqToSolrConfiguration("http://localhost:8983/") // URL to Solr instance, if solr has different location (not under/solr) set it to  http://localhost:8983/somecustomlocation
+                .MapCoreFor<MyProduct>("MyProductIndex"); // Mapping your model to Solr Index
 ```
 
-Create base service and provide the configuration to it
+#### Creating a Service
 
-```c#
+Instantiate the base service and provide the configuration:
 
+```csharp
 var solrService = new LinqToSolrService(solrConfig);
-
 ```
 
-You could create your custom inherited LinqToSolrService
+#### Extending LinqToSolrService
 
-```c#
+You may create a custom service that inherits from LinqToSolrService:
 
+```csharp
 public class MyProductService: LinqToSolrService{
 
-  private IQueryable<MyProduct> IsNotDeleted()
+  private  Task<IQueryable<>> IQueryable<MyProduct> IsNotDeleted()
   {
-       return AsQueryable<MyProduct>().Where(x=> !x.IsDeleted);
+       return  AsQueryable<MyProduct>().Where(x=> !x.IsDeleted);
   }
 
-  public ICollection<MyProduct> GetProductsByIds(params int[] ids)
+  public async Task<ICollection<MyProduct>> GetProductsByIds(params int[] ids)
   {
-      return IsNotDeleted().Where(x=> ids.Contains(x.Id)).ToList();
+      return await IsNotDeleted().Where(x=> ids.Contains(x.Id)).ToListAsync();
   }
 }
-
 ```
 
-### Linq Query examples
-#### Where
----
-```c#
+### Linq Query Examples
 
-solrService.AsQueriable<MyProduct>().Where(x=>x.Group == "MyGroup1").ToList();
+##### Where Clause
 
+```csharp
+await solrService.AsQueryable<MyProduct>().Where(x => x.Group == "MyGroup1").ToListAsync();
 ```
 
-```c#
+##### FirstOrDefault
+
+```csharp
 var groupArray = new[] { "MyGroup1", "MyGroup2", "MyGroup3", "MyGroup4" };
-solrService.AsQueriable<MyProduct>().Where(x=> groupArray.Contains(x.Group)).ToList();
-
+var product = await solrService.AsQueryable<MyProduct>().FirstOrDefault(x => x.Id == 123);
 ```
 
-```c#
+##### OrderBy & OrderByDescending
 
-solrService.AsQueriable<MyProduct>().Where(x=>x.Group.Contains("MyGroup")).ToList();
-
+```csharp
+var orderedProducts = await solrService.AsQueryable<MyProduct>()
+                                        .Where(x => x.Group == "MyGroup1")
+                                        .OrderBy(x => x.Id)
+                                        .ThenByDescending(x => x.Name)
+                                        .ToListAsync();
 ```
 
-```c#
+##### Contains Examples
 
-solrService.AsQueriable<MyProduct>().Where(x=>x.Group.StartsWith("MyGroup")).ToList();
-
+```csharp
+solrService.AsQueriable<MyProduct>().Where(x=> x.Name.Contains("productName")).ToList();
 ```
 
-```c#
-
-solrService.AsQueriable<MyProduct>().Where(x=>x.Group.EndsWith("oup1")).ToList();
-
+```csharp
+var array = new[]{"str2", "str3", "str4"};
+solrService.AsQueriable<MyProduct>().Where(x=> array.Contains(x.Name)).ToList();
 ```
 
-```c#
-
-solrService.AsQueriable<MyProduct>().Where(x=> !x.IsDeleted && x.Name.Contains("productName")).ToList();
-
+```csharp
+solrService.AsQueriable<MyProduct>().Where(x=> x.Tags.Contains("tag1")).ToList();
 ```
 
-#### FirstOrDefault
----
-```c#
+##### OrderBy & OrderByDescending
 
-solrService.AsQueriable<MyProduct>().FirstOrDefault(x=>x.Id == 123);
-
+```csharp
+await solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").OrderBy(x=>x.Id).ThenByDescending(x=>x.Name).ToListAsync();
 ```
 
-#### OrderBy & OrderByDescending
----
-```c#
+##### Select Clause
 
-solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").OrderBy(x=>x.Id).ThenByDescending(x=>x.Name).ToList();
-
-```
-
-#### Select
----
-Below find an example of a custom service you could create in your project
-```c#
+```csharp
 solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").Select(x=x.Name).ToList();
 ```
 
-```c#
+```csharp
 solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").Select(x=x new {x.Name, x.Group}).ToList();
 ```
 
+### Solr Document Interaction
 
-### Custom Service - Example
----
-Below find an example of how to implement a custom service inherited from LinqToSolrService
+Adding or Updating Documents
+Add or update documents in a Solr core:
 
-```c#
-public class MySolrService : LinqToSolrService 
-{
-    public MySolrService(LinqToSolrRequestConfiguration config) : base (config)
-    {    }
+```csharp
+var products = new[] {
+    new MyProduct { Id = 1, Name = "Product One" },
+    new MyProduct { Id = 2, Name = "Product Two" },
+    new MyProduct { Id = 3, Name = "Product Three" }
+};
 
-    public IQueryable<MyProduct> NotDeleted()
-    {
-            return AsQueryable<MyProduct>().Where(x=> !x.IsDeleted);
-    }
-
-    public ICollection<MyProduct> GetProducts(params int[] ids)
-    {
-            return NotDeleted().Where(x=> ids.Contains(x.Id)).OrderBy(x=>x.Name).ToList();
-    }
-
-    public MyProduct GetProduct(id)
-    {
-            return NotDeleted().FirstOrDefault(x=> x.Id == id);
-    }
-
-    public string[] GetGroups(id)
-    {
-            return NotDeleted().GroupBy(x=> x.Group).ToArray();
-    }
-}
+await solrService.AddOrUpdateAsync(products);
 ```
 
-## Solr Documents Interaction
-It is also possible to Add, Update or Delete documents
+Deleting Documents
+Delete documents by specifying an array of ids:
 
-### Methods
-Add and Update methods are combined to one C# Method. If the document with the solr unique key already exists in a core, Solr will just update it or create a new one if the document is new.
-
-LinqToSolrService Service contains 2 methods to add or delete documents:
-* AddOrUpdate<T>(params T[] documents) - Add or update documents.
-* Delete<T>(params object[] documentIds) - delete documents by provided collection of ids
-* Delete<T>(Func<T, bool> query) - delete documents by query (the overload method for Delete)
-
-### How to add or update
-Here is an example to change the document data
-```c#
- var products = new [] {
-    new MyProduct{Id = "Product1", Name= "Product One"},
-    new MyProduct{Id = "Product2", Name= "Product Two"},
-    new MyProduct{Id = "Product3", Name= "Product Three"} 
- };
- 
- solrService.AddOrUpdate(products); // done, solr just added/updated 3 documents
-```
-
-Example: change product group
-```c#
- var products = solrService.AsQueryable<MyProduct>().Where(x=> x.Group == "Group1").ToList();
- foreach(var p in products)
- {
-    p.Group = "Group2";
- }
- solrService.AddOrUpdate(products);
-```
-### How to Delete
-To delete specific products just provide an array of ids (or one document id) to a Delete method
-```c#
-  solrService.Delete<MyProduct>("Product123"); // delete one product with id Product123
- ```
- 
- Or you could provide an array of ids to delete
- ```c#
-  var productIds = solrService.AsQueryable<MyProduct>().Where(x=> x.Group == "Group1").Select(x=>x.Id).ToArray(); // select all ids by group
-  
-  solrService.Delete<MyProduct>(productIds); // delete documents by array of ids
-```
-
- Or simply use query
- ```c#
-  solrService.Delete<MyProduct>(x=> x.Group.Contains("Group to Delete"));
+```csharp
+await solrService.Where(x => x.Id == 123).DeleteAsync<MyProduct>();
 ```
