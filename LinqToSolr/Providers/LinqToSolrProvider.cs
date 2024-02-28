@@ -17,7 +17,7 @@ namespace LinqToSolr.Providers
 {
     public class LinqToSolrProvider : ILinqToSolrProvider, IDisposable
     {
-        private readonly HttpClient httpClient = new HttpClient();
+        private  readonly HttpClient httpClient = new HttpClient();
         public Type ElementType { get; }
         public ILinqToSolrService Service { get; }
 
@@ -59,7 +59,7 @@ namespace LinqToSolr.Providers
         }
         public TResult Execute<TResult>(Expression expression, ILinqToSolrRequest request)
         {
-            return ExecuteAsync<TResult>(expression, request).GetAwaiter().GetResult();
+            return Task.Run(async () => await ExecuteAsync<TResult>(expression, request)).Result;
         }
         public Task<TResult> ExecuteAsync<TResult>(Expression expression)
         {
@@ -203,25 +203,29 @@ namespace LinqToSolr.Providers
 
         private object FaceDocuments<TObject, TElement>(LinqToSolrFacetsResponse<TObject> response, LinqToSolrRequest request)
         {
-            var dict = new LinqToSolrExpressionDictionary<TElement>();
-            dict.Raw = new Dictionary<string, IDictionary<object, int>>();
-
+            var dict = new LinqToSolrFacetDictionary<TElement>();
+            dict.RawFacetFields = new Dictionary<string, IDictionary<object, int>>();
+            var dictType = typeof(Dictionary<,>);
             foreach (var facetField in response.Result.FacetFields)
             {
                 var expressionKey = request.Translated.Facets[facetField.Key] as Expression<Func<TElement, object>>;
                 var propertyType = GetPropertyTypeFromExpression(expressionKey);
-                var values = new List<object>();
                 var rawDict = new Dictionary<object, int>();
-
                 for (int i = 0; i < facetField.Value.Length; i += 2)
                 {
-                    var value = Convert.ChangeType(facetField.Value[i], propertyType);
                     var count = Convert.ToInt32(facetField.Value[i + 1]);
-                    values.Add(value);
+                    object value = null;
+                    if (!typeof(IEnumerable).IsAssignableFrom(propertyType))
+                    {
+                        value = Convert.ChangeType(facetField.Value[i], propertyType);
+                    }
+                    else
+                    {
+                        value = facetField.Value[i];
+                    }
                     rawDict.Add(value, count);
                 }
-                dict.Add(expressionKey, values.ToArray());
-                dict.Raw.Add(facetField.Key, rawDict);
+                dict.Add(expressionKey, rawDict);
             }
 
             return dict;
@@ -229,13 +233,23 @@ namespace LinqToSolr.Providers
 
         private Type GetPropertyTypeFromExpression<TElement>(Expression<Func<TElement, object>> expression)
         {
+            Type propType = null;
             if (expression.Body is UnaryExpression unaryExpression && unaryExpression.Operand is MemberExpression memberExpression)
             {
-                return ((PropertyInfo)memberExpression.Member).PropertyType;
+                propType = ((PropertyInfo)memberExpression.Member).PropertyType;
             }
             else if (expression.Body is MemberExpression memberExpression2)
             {
-                return ((PropertyInfo)memberExpression2.Member).PropertyType;
+                propType = ((PropertyInfo)memberExpression2.Member).PropertyType;
+            }
+
+            if (propType != null)
+            {
+                if (propType.IsArray)
+                {
+                    return propType.GetElementType();
+                }
+                return propType;
             }
             throw new InvalidOperationException("Could not determine property type from expression.");
         }

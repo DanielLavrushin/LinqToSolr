@@ -4,16 +4,16 @@ using LinqToSolr.Extensions;
 
 namespace LinqToSolr
 {
-    public class LinkToSolrEndpoint : ILinkToSolrEndpoint
+    public class LinqToSolrEndpoint : ILinqToSolrEndpoint
     {
         const string SOLRINSTANCE = "solr";
         public Uri SolrUri { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
         public bool IsProtected => !string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password);
-        public LinkToSolrEndpoint(string solrUrl) : this(solrUrl, null, null)
+        public LinqToSolrEndpoint(string solrUrl) : this(solrUrl, null, null)
         { }
-        public LinkToSolrEndpoint(string solrUrl, string username, string password)
+        public LinqToSolrEndpoint(string solrUrl, string username, string password)
         {
             Username = username;
             Password = password;

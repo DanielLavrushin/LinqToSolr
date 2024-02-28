@@ -22,7 +22,7 @@ namespace LinqToSolr.Tests
             solrCore = TestContext.Properties["solrCore"]?.ToString();
             solrUser = TestContext.Properties["solrUser"]?.ToString();
             solrPassword = TestContext.Properties["solrPassword"]?.ToString();
-            var config = new LinqToSolrConfiguration(new LinkToSolrEndpoint(solrUrl, solrUser, solrPassword)).MapCoreFor<SolrDocument>(solrCore);
+            var config = new LinqToSolrConfiguration(new LinqToSolrEndpoint(solrUrl, solrUser, solrPassword)).MapCoreFor<SolrDocument>(solrCore);
             Service = new LinqToSolrService(config);
             Query = Service.AsQueryable<SolrDocument>() as ILinqToSolrQueriable<SolrDocument>;
         }

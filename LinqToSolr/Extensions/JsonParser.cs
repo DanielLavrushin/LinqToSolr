@@ -132,6 +132,8 @@ namespace LinqToSolr.Extensions
             }
             if (type == typeof(string))
             {
+                if (json == "null")
+                    return null;
                 if (json.Length <= 2)
                     return string.Empty;
                 StringBuilder parseStringBuilder = new StringBuilder(json.Length);
@@ -167,13 +169,13 @@ namespace LinqToSolr.Extensions
             }
             if (type.IsPrimitive())
             {
-                var result = Convert.ChangeType(json, type, System.Globalization.CultureInfo.InvariantCulture);
+                var result = Convert.ChangeType(json.Replace("\"", ""), type, System.Globalization.CultureInfo.InvariantCulture);
                 return result;
             }
             if (type == typeof(decimal))
             {
                 decimal result;
-                decimal.TryParse(json, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out result);
+                decimal.TryParse(json.Replace("\"", ""), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out result);
                 return result;
             }
             if (type == typeof(DateTime))

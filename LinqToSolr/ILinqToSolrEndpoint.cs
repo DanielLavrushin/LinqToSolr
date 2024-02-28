@@ -2,7 +2,7 @@
 
 namespace LinqToSolr
 {
-    public interface ILinkToSolrEndpoint
+    public interface ILinqToSolrEndpoint
     {
         Uri SolrUri { get; set; }
         string Username { get; }

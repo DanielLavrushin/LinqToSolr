@@ -21,10 +21,10 @@ namespace LinqToSolr.Tests.Models
         [LinqToSolrField("isEnabled")]
         public bool? IsEnabled { get; set; }
 
-        #nullable enable
+#nullable enable
         [LinqToSolrField("name")]
         public string? Name { get; set; }
-        #nullable disable
+#nullable disable
 
         [LinqToSolrField("gender")]
         public string Gender { get; set; }
