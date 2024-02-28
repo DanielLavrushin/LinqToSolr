@@ -15,6 +15,10 @@ namespace LinqToSolr.Tests
             Assert.IsNotNull(docs, "The result should not be null");
             Assert.IsTrue(docs.Count > 0, "There should be at least one document");
             Assert.IsTrue(docs.Count == 2, "There should be two groups");
+
+            var raw = docs as LinqToSolrExpressionDictionary<SolrDocument>;
+            Assert.IsNotNull(raw, "The raw result should not be null");
+            Assert.IsTrue(raw.Raw.Count == 2, "There should be two groups");
         }
     }
 }

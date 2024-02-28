@@ -7,6 +7,7 @@ using System.Linq;
 using System.ComponentModel;
 using LinqToSolr.Attributes;
 using System.Net;
+using LinqToSolr.Extensions;
 
 #if NETSTANDARD2_0_OR_GREATER
 using System.Runtime.Serialization;

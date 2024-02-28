@@ -24,6 +24,7 @@ namespace LinqToSolr.Extensions
         private readonly Dictionary<Expression<Func<T, object>>, object[]> _innerDictionary = new Dictionary<Expression<Func<T, object>>, object[]>(new ExpressionKeyComparer<T>());
 
         public object[] this[Expression<Func<T, object>> key] { get => _innerDictionary[key]; set => _innerDictionary[key] = value; }
+        public IDictionary<string, IDictionary<object, int>> Raw { get; set; }
         object[] IDictionary<Expression<Func<T, object>>, object[]>.this[Expression<Func<T, object>> key]
         {
             get

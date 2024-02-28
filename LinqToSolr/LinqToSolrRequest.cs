@@ -8,7 +8,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Linq.Expressions;
 
-#if !NETSTANDARD1_1 && !NETSTANDARD1_3 && !NETSTANDARD1_6
+#if !NETSTANDARD1_1 && !NETSTANDARD1_2 && !NETSTANDARD1_3 && !NETSTANDARD1_6
 using System.Web;
 #endif
 
@@ -40,7 +40,6 @@ namespace LinqToSolr
             _provider = provider;
 
             QueryParameters = HttpUtility.ParseQueryString(string.Empty);
-
         }
 
         public Uri GetCoreUri()

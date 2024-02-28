@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Linq;
 using LinqToSolr.Attributes;
+using LinqToSolr.Extensions;
 
 namespace LinqToSolr.Extensions
 {

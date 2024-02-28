@@ -1,0 +1,18 @@
+<Project>
+    <PropertyGroup>
+        <MajorVersion>3</MajorVersion>
+        <MinorVersion>0</MinorVersion>
+        <RevisionVersion>0</RevisionVersion>
+        <Version>$(MajorVersion).$(MinorVersion).$(RevisionVersion)</Version>
+        <AssemblyVersion>$(Version)</AssemblyVersion>
+        <FileVersion>$(Version)</FileVersion>
+    </PropertyGroup>
+    <PropertyGroup>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+    <PropertyGroup>
+        <SignAssembly>True</SignAssembly>
+        <AssemblyOriginatorKeyFile>..\LinqToSolr.snk</AssemblyOriginatorKeyFile>
+        <SnkPublicKey>0024000004800000940000000602000000240000525341310004000001000100cd536fb53686ba0c9ddc63d7e2c7abb7fd3d500f4956af027c57ea0f299d54c75988680bf2d5c84dcc1246758f416e0a95785eb34b144472aaea9191945efe959bafd58da091f29fe9dfdd537578509e5431e7f7209ecead95241e55c1669b5fcdb1c483c0ac29b7f2ff23a9765cdfc19893c1515ef844ac736cfa54a8bd95a5</SnkPublicKey>
+    </PropertyGroup>
+</Project>

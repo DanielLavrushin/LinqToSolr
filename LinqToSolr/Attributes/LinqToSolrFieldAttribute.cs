@@ -11,9 +11,8 @@ namespace LinqToSolr.Attributes
     {
         public string PropertyName;
         public string SearchFormat;
-        public LinqToSolrFieldAttribute(string propertyName)
+        public LinqToSolrFieldAttribute(string propertyName) : this(propertyName, null)
         {
-            PropertyName = propertyName;
         }
         public LinqToSolrFieldAttribute(string propertyName, string searchFormat)
         {

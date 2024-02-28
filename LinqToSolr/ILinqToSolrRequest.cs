@@ -1,4 +1,5 @@
 ﻿using LinqToSolr.Expressions;
+using LinqToSolr.Extensions;
 using System;
 using System.Collections.Specialized;
 

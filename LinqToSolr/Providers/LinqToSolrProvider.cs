@@ -204,18 +204,24 @@ namespace LinqToSolr.Providers
         private object FaceDocuments<TObject, TElement>(LinqToSolrFacetsResponse<TObject> response, LinqToSolrRequest request)
         {
             var dict = new LinqToSolrExpressionDictionary<TElement>();
+            dict.Raw = new Dictionary<string, IDictionary<object, int>>();
 
             foreach (var facetField in response.Result.FacetFields)
             {
                 var expressionKey = request.Translated.Facets[facetField.Key] as Expression<Func<TElement, object>>;
                 var propertyType = GetPropertyTypeFromExpression(expressionKey);
                 var values = new List<object>();
+                var rawDict = new Dictionary<object, int>();
+
                 for (int i = 0; i < facetField.Value.Length; i += 2)
                 {
                     var value = Convert.ChangeType(facetField.Value[i], propertyType);
+                    var count = Convert.ToInt32(facetField.Value[i + 1]);
                     values.Add(value);
+                    rawDict.Add(value, count);
                 }
                 dict.Add(expressionKey, values.ToArray());
+                dict.Raw.Add(facetField.Key, rawDict);
             }
 
             return dict;

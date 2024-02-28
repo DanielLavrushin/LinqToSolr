@@ -16,7 +16,7 @@ namespace LinqToSolr.Extensions
     {
         public static string ParseQueryString(this LinqToSolrRequest request)
         {
-#if NET45 || NET46 || NETSTANDARD1_0 || NETSTANDARD1_3 || NETSTANDARD1_6
+#if NET45 || NETSTANDARD1_0 || NETSTANDARD1_2 || NETSTANDARD1_3 || NETSTANDARD1_6
             var parameters = new List<string>();
             foreach (var key in request.QueryParameters.AllKeys)
             {
@@ -32,7 +32,7 @@ namespace LinqToSolr.Extensions
 
         }
 
-#if NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
+#if NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_2 || NETSTANDARD1_3 || NETSTANDARD1_6
         public static readonly string SchemeDelimiter = "://";
 
         public static string GetLeftPart(this Uri uri, UriPartial part)
@@ -60,7 +60,7 @@ namespace LinqToSolr.Extensions
 
 #endif
 
-#if NETSTANDARD1_6
+#if NETSTANDARD1_1 ||  NETSTANDARD1_2 || NETSTANDARD1_6
         public static Type[] GetGenericArguments(this Type type)
         {
             return type.GetTypeInfo().IsGenericTypeDefinition
@@ -104,6 +104,9 @@ namespace LinqToSolr.Extensions
             return type.GetRuntimeProperty(propertyName);
         }
 #endif
+
+
+
 
         public static bool IsPrimitive(this Type type)
         {
@@ -167,8 +170,42 @@ namespace LinqToSolr.Extensions
         }
     }
 
+#if NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_2
+    public class NameValueCollection : List<KeyValuePair<string, object>>
+    {
+        IList<KeyValuePair<string, object>> list;
+        public string[] AllKeys => list != null ? list.Select(x => x.Key).Distinct().ToArray() : null;
+        public object this[string key]
+        {
+            get
+            {
+                return list.Where(x => x.Key == key).Select(x => x.Value).ToArray();
+            }
+            set
+            {
+                if (list.Any(x => x.Key == key))
+                {
+                    list.Remove(list.First(x => x.Key == key));
+                }
+                list.Add(new KeyValuePair<string, object>(key, value));
+            }
+        }
+        public NameValueCollection()
+        {
+            list = new List<KeyValuePair<string, object>>();
+        }
+        public string[] GetValues(string key)
+        {
+            return list.Where(x => x.Key == key).Select(x => x.Value.ToString()).ToArray();
+        }
+        public void Add(string key, object value)
+        {
+            list.Add(new KeyValuePair<string, object>(key, value));
+        }
+    }
+#endif
 
-#if NET45 || NET46 || NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
+#if NET45 || NET46 || NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_2 || NETSTANDARD1_3 || NETSTANDARD1_6
     internal static class HttpUtility
     {
         public static NameValueCollection ParseQueryString(string queryString)
@@ -197,7 +234,7 @@ namespace LinqToSolr.Extensions
 #endif
 
 
-#if NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_3 || NETSTANDARD1_6
+#if NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_2 || NETSTANDARD1_3 || NETSTANDARD1_6
     internal enum UriPartial
     {
         Scheme,
@@ -207,4 +244,24 @@ namespace LinqToSolr.Extensions
     }
 #endif
 
+#if NETSTANDARD1_1 ||  NETSTANDARD1_2
+    [Flags]
+    public enum BindingFlags
+    {
+        Default = 0,
+        IgnoreCase = 1,
+        DeclaredOnly = 2,
+        Instance = 4,
+        Static = 8,
+        Public = 16,
+        NonPublic = 32,
+        FlattenHierarchy = 64,
+        InvokeMethod = 256,
+        CreateInstance = 512,
+        GetField = 1024,
+        SetField = 2048,
+        GetProperty = 4096,
+        SetProperty = 8192
+    }
+#endif
 }

@@ -1,20 +1,43 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard1.3;netstandard1.6;netstandard2.0;netstandard2.1</TargetFrameworks>
-    <LangVersion>latest</LangVersion>
-    <IsTestProject>false</IsTestProject>
-    <NoWarn>$(NoWarn);CS8632</NoWarn>
+    <TargetFrameworks>net45;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.6;netstandard2.0;netstandard2.1</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Title>LinqToSolr</Title>
+    <PackageId>LinqToSolr</PackageId>
+    <Authors>Daniel V. Lavrushin</Authors>
+    <PackageProjectUrl>https://github.com/daniellavrushin/linqtosolr</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Product>LinqtoSolr</Product>
+    <Description>LinqToSolr is an intuitive and lightweight C# library designed to enhance Solr queries with the power of Linq. It seamlessly integrates Solr search capabilities into .NET applications, facilitating cleaner and more maintainable code. LinqToSolr is suitable for developing complex search solutions or simplifying query logic.</Description>
+    <Copyright>Copyright © $(Authors) 2024</Copyright>
+    <IncludeSymbols>true</IncludeSymbols>
+    <PackageTags>linq,solr</PackageTags>
+    <PackageIcon>linqtosolr.png</PackageIcon>
+    <RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>True</IsPackable>
+    <GeneratePackageOnBuild Condition="$(Configuration) == 'Release'">True</GeneratePackageOnBuild>
+    <AssemblyTitle>$(Title) ($(TargetFramework) framework)</AssemblyTitle>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>$(MSBuildProjectName).Tests</_Parameter1>
+      <_Parameter1>$(MSBuildProjectName).Tests, PublicKey=$(SnkPublicKey)</_Parameter1>
     </AssemblyAttribute>
-    <InternalsVisibleTo Include="$(MSBuildProjectName).Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\linqtosolr.png" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework) == 'net45'">
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework) == 'netstandard1.1'">
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework) == 'netstandard1.2'">
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework) == 'netstandard1.3'">
