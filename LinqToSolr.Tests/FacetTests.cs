@@ -6,7 +6,7 @@ namespace LinqToSolr.Tests
     [TestClass]
     public class FacetTests : BaseTest
     {
-        [TestMethod]
+        [TestMethod("Select facets test")]
         public async Task FacetSelectTest()
         {
             var docs = await Query.ToFacetsAsync(x => x.IsActive, x => x.Age);

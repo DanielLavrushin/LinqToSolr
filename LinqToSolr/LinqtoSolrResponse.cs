@@ -44,6 +44,23 @@ namespace LinqToSolr
             throw new NotImplementedException();
         }
     }
+    internal class LinqToSolrDeleteResponse<TObject> : LinqToSolrResponseBase, ILinqToSolrFinalResponse<TObject>
+    {
+
+        public bool Success => Header.Status == HttpStatusCode.OK;
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public TObject GetDocuments()
+        {
+            throw new NotImplementedException();
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void SetDcouments(object documents)
+        {
+            throw new NotImplementedException();
+        }
+    }
     internal class LinqToSolrResponse<TObject> : LinqToSolrResponseBase, ILinqToSolrFinalResponse<TObject>
     {
         [LinqToSolrField("response")]

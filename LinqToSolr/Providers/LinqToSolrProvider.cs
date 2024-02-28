@@ -21,7 +21,7 @@ namespace LinqToSolr.Providers
         public Type ElementType { get; }
         public ILinqToSolrService Service { get; }
 
-        public ITranslatedQuery Translated { get; }
+        public ILinqToSolrRequest Request { get; set; }
 
         public LinqToSolrProvider(ILinqToSolrService service, Type elementType)
         {
@@ -32,7 +32,6 @@ namespace LinqToSolr.Providers
                 var byteArray = NetStandardSupport.GetAsciiBytes($"{Service.Configuration.Endpoint.Username}:{Service.Configuration.Endpoint.Password}");
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
             }
-            Translated = new TranslatedQuery();
 
         }
 
@@ -56,26 +55,37 @@ namespace LinqToSolr.Providers
 
         public TResult Execute<TResult>(Expression expression)
         {
-            return ExecuteAsync<TResult>(expression).GetAwaiter().GetResult();
+            return Execute<TResult>(expression, PrepareRequest<TResult>(expression));
         }
-
-        public async Task<TResult> ExecuteAsync<TResult>(Expression expression)
+        public TResult Execute<TResult>(Expression expression, ILinqToSolrRequest request)
         {
-            var translator = new ExpressionTranslator<TResult>(expression);
-            var query = translator.Translate(expression, Translated);
-            var request = new LinqToSolrRequest(this, query);
-            var response = await PrepareAndSendAsync<TResult>(request);
+            return ExecuteAsync<TResult>(expression, request).GetAwaiter().GetResult();
+        }
+        public Task<TResult> ExecuteAsync<TResult>(Expression expression)
+        {
+            return ExecuteAsync<TResult>(expression, PrepareRequest<TResult>(expression));
+        }
+        public async Task<TResult> ExecuteAsync<TResult>(Expression expression, ILinqToSolrRequest request)
+        {
+            Request = request;
+            var response = await PrepareAndSendAsync<TResult>(Request);
             var docs = response.GetDocuments();
             return docs;
         }
+        public ILinqToSolrRequest PrepareRequest<TResult>(Expression expression)
+        {
+            var translator = new ExpressionTranslator<TResult>(expression);
+            var query = translator.Translate(expression);
+            return new LinqToSolrRequest(this, query);
+        }
 
-        internal async Task<ILinqToSolrFinalResponse<TObject>> PrepareAndSendAsync<TObject>(LinqToSolrRequest request)
+        internal async Task<ILinqToSolrFinalResponse<TObject>> PrepareAndSendAsync<TObject>(ILinqToSolrRequest request)
         {
             var response = await PrepareAndSendAsync(request, typeof(TObject));
             return response as ILinqToSolrFinalResponse<TObject>;
         }
 
-        internal async Task<object> PrepareAndSendAsync(LinqToSolrRequest request, Type returnType)
+        internal async Task<object> PrepareAndSendAsync(ILinqToSolrRequest request, Type returnType)
         {
             var response = await SendAsync(request, returnType);
             if (request.Translated.Select.Any())
@@ -102,17 +112,17 @@ namespace LinqToSolr.Providers
 
         internal Task<ILinqToSolrFinalResponse<TObject>> SendAsync<TObject>(LinqToSolrRequest request)
         {
-
             return SendAsync(request, typeof(TObject)) as Task<ILinqToSolrFinalResponse<TObject>>;
         }
-        internal async Task<object> SendAsync(LinqToSolrRequest request, Type returnType)
+
+        internal async Task<object> SendAsync(ILinqToSolrRequest request, Type returnType)
         {
             var uri = request.GetFinalUri();
-            var method = Translated.Method == HttpMethod.Get || Translated.Method == HttpMethod.Delete || Translated.Method == HttpMethod.Delete ? Translated.Method : HttpMethod.Post;
+            var method = request.Translated.Method != HttpMethod.Get ? HttpMethod.Post : request.Translated.Method;
 
             var httpRequestMessage = new HttpRequestMessage(method, uri)
             {
-                Content = (Translated.Method != HttpMethod.Get ? new StringContent(request.Body, Encoding.UTF8, request.ContentType) : null)
+                Content = (request.Translated.Method != HttpMethod.Get ? new StringContent(request.Body, Encoding.UTF8, request.ContentType) : null)
             };
             var httpResponse = await httpClient.SendAsync(httpRequestMessage);
             var responseContent = await httpResponse.Content.ReadAsStringAsync();
@@ -152,8 +162,16 @@ namespace LinqToSolr.Providers
 
         public async Task<ILinqToSolrFinalResponse<TSource>> AddOrUpdateAsync<TSource>(params TSource[] documents)
         {
-            var request = LinqToSolrRequest.InitUpdate(this, documents);
-            return await SendAsync(request, typeof(TSource)) as ILinqToSolrFinalResponse<TSource>;
+            Request = LinqToSolrRequest.InitUpdate(this, documents);
+            return await SendAsync(Request, typeof(TSource)) as ILinqToSolrFinalResponse<TSource>;
+        }
+
+        public async Task<ILinqToSolrFinalResponse<TSource>> DeleteAsync<TSource>(IQueryable<TSource> expression)
+        {
+            var translator = new ExpressionTranslator<TSource>(expression.Expression);
+            var query = translator.Translate(expression.Expression);
+            Request = LinqToSolrRequest.InitDelete<TSource>(this, query);
+            return await SendAsync(Request, typeof(TSource)) as ILinqToSolrFinalResponse<TSource>;
         }
 
         object CreateFakeResponse(object documents, Type returnType, Type responseType = null)
@@ -166,12 +184,16 @@ namespace LinqToSolr.Providers
             response.GetType().GetProperty("Response").PropertyType.GetProperty("Result").SetValue(response.GetType().GetProperty("Response").GetValue(response), documents);
             return response;
         }
-        Type GetResponseType(Type returnType, LinqToSolrRequest request)
+
+        Type GetResponseType(Type returnType, ILinqToSolrRequest request)
         {
             if (returnType == null) throw new ArgumentNullException(nameof(returnType));
 
-            var responseGenericType = request.Translated.Facets.Any() ? typeof(LinqToSolrFacetsResponse<>) : request.Translated.Groups.Any() ? typeof(LinqToSolrGroupResponse<>) :
-                Translated.Method == HttpMethod.Put ? typeof(LinqToSolrUpdateResponse<>) :
+            var responseGenericType = request.Translated.Facets.Any() ?
+                typeof(LinqToSolrFacetsResponse<>) :
+                request.Translated.Groups.Any() ? typeof(LinqToSolrGroupResponse<>) :
+                request.Translated.Method == HttpMethod.Put ? typeof(LinqToSolrUpdateResponse<>) :
+                request.Translated.Method == HttpMethod.Delete ? typeof(LinqToSolrDeleteResponse<>) :
                 typeof(LinqToSolrResponse<>);
             var baseElementType = request.Translated.Facets.Any() ? returnType : returnType.IsGenericType() ? returnType.GetGenericTypeDefinition().MakeGenericType(ElementType) : ElementType;
 
@@ -198,6 +220,7 @@ namespace LinqToSolr.Providers
 
             return dict;
         }
+
         private Type GetPropertyTypeFromExpression<TElement>(Expression<Func<TElement, object>> expression)
         {
             if (expression.Body is UnaryExpression unaryExpression && unaryExpression.Operand is MemberExpression memberExpression)
@@ -210,6 +233,7 @@ namespace LinqToSolr.Providers
             }
             throw new InvalidOperationException("Could not determine property type from expression.");
         }
+
         private object GroupDocuments<TKey, TElement, TObject>(LinqToSolrGroupResponse<TObject> response, Type returnType) where TObject : IEnumerable<TElement>
         {
             var groups = new List<IGrouping<TKey, TElement>>();
@@ -229,7 +253,8 @@ namespace LinqToSolr.Providers
             var result = Convert.ChangeType(groups, returnType);
             return result;
         }
-        private object SelectDocuments(LinqToSolrRequest request, object response)
+
+        private object SelectDocuments(ILinqToSolrRequest request, object response)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             if (response == null) throw new ArgumentNullException(nameof(response));
@@ -274,5 +299,7 @@ namespace LinqToSolr.Providers
         {
 
         }
+
+
     }
 }

@@ -7,7 +7,7 @@ namespace LinqToSolr.Tests
     public class DateTests : BaseTest
     {
 
-        [TestMethod]
+        [TestMethod("Date rangle test")]
         public async Task DateRangeTest()
         {
             var start = new DateTime(2018, 1, 1);

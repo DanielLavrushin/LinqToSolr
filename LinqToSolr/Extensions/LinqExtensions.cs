@@ -14,14 +14,11 @@ namespace LinqToSolr.Extensions
     public static class LinqExtensions
     {
 
-        public static async Task<bool> AddOrUpdateAsync<TSource>(this IQueryable<TSource> query, params TSource[] documents)
+        public static async Task<bool> DeleteAsync<TSource>(this IQueryable<TSource> query)
         {
             if (query.Provider is ILinqToSolrProvider provider)
             {
-                var prevMethod = provider.Translated.Method;
-                provider.Translated.Method = HttpMethod.Put;
-                var result = await provider.AddOrUpdateAsync(documents) as LinqToSolrUpdateResponse<TSource>;
-                provider.Translated.Method = prevMethod;
+                var result = await provider.DeleteAsync(query) as LinqToSolrDeleteResponse<TSource>;
                 return result.Success;
             }
             else
@@ -29,17 +26,34 @@ namespace LinqToSolr.Extensions
                 throw new InvalidOperationException("The provider is not supported for async operations.");
             }
         }
+
+        public static async Task<bool> AddOrUpdateAsync<TSource>(this IQueryable<TSource> query, params TSource[] documents)
+        {
+            if (query.Provider is ILinqToSolrProvider provider)
+            {
+                var result = await provider.AddOrUpdateAsync(documents) as LinqToSolrUpdateResponse<TSource>;
+                return result.Success;
+            }
+            else
+            {
+                throw new InvalidOperationException("The provider is not supported for async operations.");
+            }
+        }
+
         public static async Task<IDictionary<Expression<Func<T, object>>, object[]>> ToFacetsAsync<T>(this IQueryable<T> query, params Expression<Func<T, object>>[] expression)
         {
             if (query.Provider is ILinqToSolrProvider provider)
             {
+                if (provider.Request == null)
+                {
+                    provider.Request = provider.PrepareRequest<T>(query.Expression);
+                }
                 foreach (var expr in expression)
                 {
-                    provider.Translated.AddFacet(expr);
-
+                    provider.Request.Translated.AddFacet(expr);
                 }
 
-                var result = await provider.ExecuteAsync<IDictionary<Expression<Func<T, object>>, object[]>>(query.Expression);
+                var result = await provider.ExecuteAsync<IDictionary<Expression<Func<T, object>>, object[]>>(query.Expression, provider.Request);
                 return result;
             }
             else
@@ -47,6 +61,7 @@ namespace LinqToSolr.Extensions
                 throw new InvalidOperationException("The provider is not supported for async operations.");
             }
         }
+
         public static async Task<List<T>> ToListAsync<T>(this IQueryable<T> query)
         {
             if (query.Provider is ILinqToSolrProvider provider)
@@ -75,11 +90,16 @@ namespace LinqToSolr.Extensions
             }
 
         }
+
         public static IQueryable<TSource> AsPostMethod<TSource>(this IQueryable<TSource> query)
         {
             if (query.Provider is ILinqToSolrProvider provider)
             {
-                provider.Translated.Method = HttpMethod.Post;
+                if (provider.Request == null)
+                {
+                    provider.Request = provider.PrepareRequest<TSource>(query.Expression);
+                }
+                provider.Request.Translated.Method = HttpMethod.Post;
                 return query;
             }
             else

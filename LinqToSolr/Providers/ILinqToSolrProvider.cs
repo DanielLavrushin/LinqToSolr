@@ -12,8 +12,12 @@ namespace LinqToSolr.Providers
     {
         Type ElementType { get; }
         ILinqToSolrService Service { get; }
+        ILinqToSolrRequest Request { get; set; }
+        TResult Execute<TResult>(Expression expression, ILinqToSolrRequest request);
         Task<TResult> ExecuteAsync<TResult>(Expression expression);
+        Task<TResult> ExecuteAsync<TResult>(Expression expression, ILinqToSolrRequest request);
+        ILinqToSolrRequest PrepareRequest<TResult>(Expression expression);
         Task<ILinqToSolrFinalResponse<TSource>> AddOrUpdateAsync<TSource>(params TSource[] documents);
-        ITranslatedQuery Translated { get; }
+        Task<ILinqToSolrFinalResponse<TSource>> DeleteAsync<TSource>(IQueryable<TSource> query);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using LinqToSolr.Tests.Models;
+using System.Diagnostics;
 
 namespace LinqToSolr.Tests
 {
@@ -7,12 +8,13 @@ namespace LinqToSolr.Tests
     {
         public TestContext TestContext { get; set; }
         internal LinqToSolrService Service;
-
+        public static Guid DocId;
         public string solrUrl;
         public string solrCore;
         public string solrUser;
         public string solrPassword;
         public ILinqToSolrQueriable<SolrDocument> Query;
+
         [TestInitialize]
         public void Initialize()
         {
@@ -24,5 +26,7 @@ namespace LinqToSolr.Tests
             Service = new LinqToSolrService(config);
             Query = Service.AsQueryable<SolrDocument>() as ILinqToSolrQueriable<SolrDocument>;
         }
+
+ 
     }
 }

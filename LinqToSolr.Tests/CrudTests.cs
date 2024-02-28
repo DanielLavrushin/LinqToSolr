@@ -1,5 +1,6 @@
 ﻿using LinqToSolr.Extensions;
 using LinqToSolr.Tests.Models;
+using System.Diagnostics;
 
 namespace LinqToSolr.Tests
 {
@@ -7,34 +8,65 @@ namespace LinqToSolr.Tests
     [DoNotParallelize]
     public class CrudTests : BaseTest
     {
-        [TestMethod]
-        public async Task DoUpdateSingleTest()
+        [ClassInitialize]
+        public static void ClassInitialize(TestContext context)
         {
-            var docIndex = 1;
-            var prevName = "Norton Guthrie";
-            var updateName = "Norton Guthrie Updated!";
-            var doc = await Query.Where(d => d.Index == docIndex).FirstOrDefaultAsync();
-            Assert.IsNotNull(doc, "The result should not be null");
-            Assert.AreEqual(docIndex, doc.Index, "The index should be the same");
-            Assert.IsTrue(doc.Name == prevName, $"The name should  be the {prevName}");
+            DocId = Guid.NewGuid();
+            Debug.WriteLine($"DocId: {DocId}");
+        }
 
-            doc.Name = updateName;
+        [TestMethod("Create documents"), TestCategory("Crud"), Priority(10)]
+        public async Task Crud1CreateDocsTest()
+        {
+            var doc = new SolrDocument
+            {
+                Index = 1000,
+                Id = DocId,
+                Name = "Test Document"
+            };
+
+            var result = await Query.AddOrUpdateAsync(doc);
+            Assert.IsTrue(result, "The result should be true");
+        }
+
+
+
+        [TestMethod("Update documents"), TestCategory("Crud"), Priority(20)]
+        public async Task Crud2UpdateSingleTest()
+        {
+            var doc = await Query.Where(d => d.Id == DocId).FirstOrDefaultAsync();
+            Assert.IsNotNull(doc, "The result should not be null");
+            Assert.AreEqual(DocId, doc.Id, $"The Id should be {DocId}");
+
+            var oldName = doc.Name;
+            var updatedName = oldName + " updated!";
+            doc.Name = updatedName;
             var result = await Query.AddOrUpdateAsync(doc);
             Assert.IsTrue(result, "The result should be true");
 
-            doc = await Query.Where(d => d.Index == docIndex).FirstOrDefaultAsync();
+            doc = await Query.Where(d => d.Id == DocId).FirstOrDefaultAsync();
             Assert.IsNotNull(doc, "The result should not be null");
-            Assert.AreEqual(docIndex, doc.Index, "The index should be the same");
-            Assert.IsTrue(doc.Name == updateName, $"The name should  be the {updateName}");
+            Assert.AreEqual(DocId, doc.Id, $"The Id should be {DocId}");
+            Assert.IsTrue(doc.Name == updatedName, $"The name should  be the {updatedName}");
 
-            doc.Name = prevName;
+            doc.Name = oldName;
             result = await Query.AddOrUpdateAsync(doc);
             Assert.IsTrue(result, "The result should be true");
 
-            doc = await Query.Where(d => d.Index == docIndex).FirstOrDefaultAsync();
+            doc = await Query.Where(d => d.Id == DocId).FirstOrDefaultAsync();
             Assert.IsNotNull(doc, "The result should not be null");
-            Assert.AreEqual(docIndex, doc.Index, "The index should be the same");
-            Assert.IsTrue(doc.Name == prevName, $"The name should  be the {prevName}");
+            Assert.AreEqual(DocId, doc.Id, $"The Id should be {DocId}");
+            Assert.IsTrue(doc.Name == oldName, $"The name should  be the {oldName}");
+        }
+
+        [TestMethod("Delete documents"), TestCategory("Crud"), Priority(30)]
+        public async Task Crud3DeleteDocTest()
+        {
+            var result = await Query.Where(d => d.Id == DocId).DeleteAsync();
+            Assert.IsTrue(result, "The result should be true");
+
+            var doc = await Query.Where(d => d.Id == DocId).FirstOrDefaultAsync();
+            Assert.IsNull(doc, "The result should be null");
         }
     }
 }

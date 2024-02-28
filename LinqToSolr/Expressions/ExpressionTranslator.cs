@@ -24,6 +24,11 @@ namespace LinqToSolr.Expressions
             _expression = expression;
 
         }
+        public ITranslatedQuery Translate(Expression expression)
+        {
+            return Translate(expression, new TranslatedQuery());
+        }
+
         public ITranslatedQuery Translate(Expression expression, ITranslatedQuery queryResult)
         {
             _queryResult = queryResult;
