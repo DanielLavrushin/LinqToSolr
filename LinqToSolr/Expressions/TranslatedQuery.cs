@@ -24,7 +24,7 @@ namespace LinqToSolr.Expressions
         IDictionary<string, object> Facets { get; }
         ICollection<string> Filters { get; }
         ICollection<string> Groups { get; }
-        void AddFacet<TObject, TProperty>(Expression<Func<TObject, TProperty>> expression);
+        void AddFacet<TObject>(Expression<Func<TObject, object>> expression);
         void AddSorting(Expression expression, SortingDirection sortingDirection);
         void AddSelectField(Expression expression);
         void AddGrouping(Expression expression);
@@ -41,9 +41,8 @@ namespace LinqToSolr.Expressions
         public ICollection<string> Groups { get; } = new List<string>();
         public IDictionary<string, object> Facets { get; } = new Dictionary<string, object>();
 
-        public void AddFacet<TObject, TProperty>(Expression<Func<TObject, TProperty>> expression)
+        public void AddFacet<TObject>(Expression<Func<TObject, object>> expression)
         {
-
             var visitor = new CollectMembersVisitor();
             visitor.Visit(expression);
             foreach (var member in visitor.Members)

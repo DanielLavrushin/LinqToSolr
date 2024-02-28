@@ -30,14 +30,14 @@ $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0
 
 # Now, when making Invoke-RestMethod calls, include the Authorization header
 $headers = @{
-    Authorization = "Basic $base64AuthInfo"
+  #  Authorization = "Basic $base64AuthInfo"
 }
 
 
 docker rm $solrContainer --force
 Remove-Item -Recurse -Force "$PSScriptRoot\solr\" -ErrorAction SilentlyContinue
 New-Item -Path "$PSScriptRoot\" -Name "solr" -ItemType "directory"
-$securityJsonContent | Out-File -FilePath $securityJsonPath -Encoding UTF8 -ErrorAction SilentlyContinue
+#$securityJsonContent | Out-File -FilePath $securityJsonPath -Encoding UTF8 -ErrorAction SilentlyContinue
 Write-Host "security.json has been created at $securityJsonPath" -ForegroundColor Green 
 
 $cmd = "docker run -d --name $solrContainer -p 8983:8983 -v $($solrCofigs -replace '\\', '/'):/var/solr/data solr solr-precreate $solrCoreName"
