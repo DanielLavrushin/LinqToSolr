@@ -11,6 +11,7 @@ namespace LinqToSolr.Tests
         public async Task OrderByAscTest()
         {
             var docs = await Query.OrderBy(x => x.Index).ToListAsync();
+            var response = Service.GetLastResponse<LinqToSolrResponse<List<SolrDocument>>, List<SolrDocument>>();
             Assert.IsNotNull(docs, "Docs should not be null");
             Assert.AreEqual(0, docs.First().Index, "First index should be 0");
         }

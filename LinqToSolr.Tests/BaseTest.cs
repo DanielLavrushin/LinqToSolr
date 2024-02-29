@@ -7,7 +7,7 @@ namespace LinqToSolr.Tests
     public abstract class BaseTest
     {
         public TestContext TestContext { get; set; }
-        internal LinqToSolrService Service;
+        internal ILinqToSolrService Service;
         public static Guid DocId;
         public string solrUrl;
         public string solrCore;

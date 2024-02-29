@@ -149,6 +149,8 @@ namespace LinqToSolr.Providers
             }
 
             var response = JsonParser.FromJson(responseContent, GetResponseType(returnType, request));
+            ((ILinqToSolrUriResponse)response).RequestUrl = uri;
+            Service.SetLastResponse(response);
 
             if (request.Translated.Groups.Any())
             {
@@ -164,7 +166,6 @@ namespace LinqToSolr.Providers
                 response = InvokeGenericMethod(GetType(), nameof(FaceDocuments), new[] { returnType, ElementType }, this, new[] { response, request });
             }
 
-            Debug.WriteLine(uri);
             return response;
         }
 
