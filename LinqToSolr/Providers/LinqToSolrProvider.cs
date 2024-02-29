@@ -17,7 +17,8 @@ namespace LinqToSolr.Providers
 {
     public class LinqToSolrProvider : ILinqToSolrProvider, IDisposable
     {
-        private readonly HttpClient httpClient = new HttpClient();
+        private static readonly HttpClient httpClient = new HttpClient();
+        private static readonly object httpAuthLock = new object();
         public Type ElementType { get; }
         public ILinqToSolrService Service { get; }
 
@@ -27,10 +28,18 @@ namespace LinqToSolr.Providers
         {
             Service = service;
             ElementType = elementType;
+            SetupAuthorization();
+        }
+
+        private void SetupAuthorization()
+        {
             if (Service.Configuration.Endpoint.IsProtected && httpClient.DefaultRequestHeaders.Authorization == null)
             {
-                var byteArray = NetStandardSupport.GetAsciiBytes($"{Service.Configuration.Endpoint.Username}:{Service.Configuration.Endpoint.Password}");
-                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                lock (httpAuthLock)
+                {
+                    var byteArray = NetStandardSupport.GetAsciiBytes($"{Service.Configuration.Endpoint.Username}:{Service.Configuration.Endpoint.Password}");
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                }
             }
         }
 
@@ -316,7 +325,7 @@ namespace LinqToSolr.Providers
 
         public void Dispose()
         {
-
+            httpClient?.Dispose();
         }
     }
 }
