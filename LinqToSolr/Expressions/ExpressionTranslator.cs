@@ -107,13 +107,13 @@ namespace LinqToSolr.Expressions
 
             if (node.Method.Name == nameof(Enumerable.Take))
             {
-                _queryResult.Take = EvalConstant<int>(node.Arguments[1]);
+                _queryResult.Defaults.Take = EvalConstant<int>(node.Arguments[1]);
                 return Visit(node.Arguments[0]);
             }
 
             if (node.Method.Name == nameof(Enumerable.Skip))
             {
-                _queryResult.Skip = EvalConstant<int>(node.Arguments[1]);
+                _queryResult.Defaults.Skip = EvalConstant<int>(node.Arguments[1]);
                 return Visit(node.Arguments[0]);
             }
 

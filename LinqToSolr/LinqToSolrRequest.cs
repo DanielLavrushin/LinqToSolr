@@ -64,12 +64,12 @@ namespace LinqToSolr
             }
             QueryParameters["q"] = "*";
             QueryParameters["wt"] = "json";
-            QueryParameters["start"] = Translated.Skip.ToString();
-            QueryParameters["rows"] = Translated.Take.ToString();
+            QueryParameters["start"] = Translated.Defaults.Skip.ToString();
+            QueryParameters["rows"] = Translated.Defaults.Take.ToString();
             if (Translated.Groups.Any())
             {
-                QueryParameters.Add("group.limit", Translated.Take.ToString());
-                QueryParameters.Add("group.offset", Translated.Skip.ToString());
+                QueryParameters.Add("group.limit", Translated.Defaults.Take.ToString());
+                QueryParameters.Add("group.offset", Translated.Defaults.Skip.ToString());
                 QueryParameters.Add("group", "true");
                 foreach (var group in Translated.Groups)
                 {
@@ -79,10 +79,10 @@ namespace LinqToSolr
 
             if (Translated.Facets.Count > 0)
             {
-                QueryParameters.Add("facet", "true");
-                QueryParameters.Add("facet.limit", Translated.Take.ToString());
-                QueryParameters.Add("facet.mincount", "1");
                 QueryParameters["rows"] = "0";
+                QueryParameters.Add("facet", "true");
+                QueryParameters.Add("facet.limit", Translated.Defaults.Take.ToString());
+                QueryParameters.Add("facet.mincount", "1");
                 foreach (var facet in Translated.Facets)
                 {
                     QueryParameters.Add("facet.field", facet.Key);
@@ -115,7 +115,7 @@ namespace LinqToSolr
         }
         internal static LinqToSolrRequest InitUpdate<TSource>(ILinqToSolrProvider provider, TSource[] documents)
         {
-            var translated = new TranslatedQuery() { Method = HttpMethod.Put };
+            var translated = new TranslatedQuery(provider.Service.Configuration.Defaults) { Method = HttpMethod.Put };
             var request = new LinqToSolrRequest(provider, translated);
             request.QueryParameters = HttpUtility.ParseQueryString(string.Empty);
             request.QueryParameters.Add("commit", "true");

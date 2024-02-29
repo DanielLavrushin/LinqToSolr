@@ -17,7 +17,7 @@ namespace LinqToSolr.Providers
 {
     public class LinqToSolrProvider : ILinqToSolrProvider, IDisposable
     {
-        private  readonly HttpClient httpClient = new HttpClient();
+        private readonly HttpClient httpClient = new HttpClient();
         public Type ElementType { get; }
         public ILinqToSolrService Service { get; }
 
@@ -32,7 +32,6 @@ namespace LinqToSolr.Providers
                 var byteArray = NetStandardSupport.GetAsciiBytes($"{Service.Configuration.Endpoint.Username}:{Service.Configuration.Endpoint.Password}");
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
             }
-
         }
 
         public IQueryable CreateQuery(Expression expression)
@@ -319,7 +318,5 @@ namespace LinqToSolr.Providers
         {
 
         }
-
-
     }
 }

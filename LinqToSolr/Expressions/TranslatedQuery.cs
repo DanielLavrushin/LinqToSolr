@@ -15,8 +15,7 @@ namespace LinqToSolr.Expressions
     }
     public interface ITranslatedQuery
     {
-        int Skip { get; set; }
-        int Take { get; set; }
+        ILinqToSolrConfigurationDefaults Defaults { get; }
         HttpMethod Method { get; set; }
         LambdaExpression SelectExpression { get; }
         IDictionary<string, SortingDirection> Sorting { get; }
@@ -32,8 +31,7 @@ namespace LinqToSolr.Expressions
     internal class TranslatedQuery : ITranslatedQuery
     {
         public HttpMethod Method { get; set; } = HttpMethod.Get;
-        public int Skip { get; set; } = 0;
-        public int Take { get; set; } = 100;
+        public ILinqToSolrConfigurationDefaults Defaults { get; private set; }
         public LambdaExpression SelectExpression { get; private set; }
         public IDictionary<string, SortingDirection> Sorting { get; } = new Dictionary<string, SortingDirection>();
         public IDictionary<string, MemberInfo> Select { get; } = new Dictionary<string, MemberInfo>();
@@ -41,6 +39,14 @@ namespace LinqToSolr.Expressions
         public ICollection<string> Groups { get; } = new List<string>();
         public IDictionary<string, object> Facets { get; } = new Dictionary<string, object>();
 
+        public TranslatedQuery() : this(null)
+        {
+
+        }
+        public TranslatedQuery(ILinqToSolrConfigurationDefaults defaults)
+        {
+            Defaults = new LinqToSolrConfigurationDefaults(defaults);
+        }
         public void AddFacet<TObject>(Expression<Func<TObject, object>> expression)
         {
             var visitor = new CollectMembersVisitor();

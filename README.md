@@ -136,13 +136,22 @@ solrService.AsQueriable<MyProduct>().Where(x=> x.Tags.Contains("tag1")).ToList()
 ```
 
 ##### OrderBy & OrderByDescending
-
 ```csharp
 await solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").OrderBy(x=>x.Id).ThenByDescending(x=>x.Name).ToListAsync();
 ```
 
-##### Select Clause
+##### Facets
+```csharp
+            var docs = await solrService.AsQueriable<MyProduct>().ToFacetsAsync(x => x.IsActive) ;
+            var activeList = docs[x=>x.IsActive]; // bool list of facets
+```
 
+```csharp
+            var docs = await solrService.AsQueriable<MyProduct>().Where(x=>x.IsActive).ToFacetsAsync(x => x.Tags) as LinqToSolrFacetDictionary<SolrDocument>; // facets with query for arrays
+            var tagsList = docs.GetFacet<string[], string>(x => x.Tags);
+```
+
+##### Select Clause
 ```csharp
 solrService.AsQueriable<MyProduct>().Where(x=> x.Group == "MyGroup1").Select(x=x.Name).ToList();
 ```
