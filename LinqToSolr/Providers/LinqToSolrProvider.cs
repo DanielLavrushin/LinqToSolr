@@ -325,7 +325,6 @@ namespace LinqToSolr.Providers
 
         public void Dispose()
         {
-            httpClient?.Dispose();
         }
     }
 }
