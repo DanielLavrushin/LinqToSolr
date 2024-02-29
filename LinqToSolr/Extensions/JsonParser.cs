@@ -165,23 +165,23 @@ namespace LinqToSolr.Extensions
             }
             if (type == typeof(Guid))
             {
-                return new Guid(json.Replace("\"", ""));
+                return new Guid(UnwrapJsonstring(json));
             }
             if (type.IsPrimitive())
             {
-                var result = Convert.ChangeType(json.Replace("\"", ""), type, System.Globalization.CultureInfo.InvariantCulture);
+                var result = Convert.ChangeType(UnwrapJsonstring(json), type, System.Globalization.CultureInfo.InvariantCulture);
                 return result;
             }
             if (type == typeof(decimal))
             {
                 decimal result;
-                decimal.TryParse(json.Replace("\"", ""), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out result);
+                decimal.TryParse(UnwrapJsonstring(json), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out result);
                 return result;
             }
             if (type == typeof(DateTime))
             {
                 DateTime result;
-                DateTime.TryParse(json.Replace("\"", ""), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out result);
+                DateTime.TryParse(UnwrapJsonstring(json), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out result);
                 return result;
             }
             if (json == "null")
@@ -379,12 +379,12 @@ namespace LinqToSolr.Extensions
             if (!fieldInfoCache.TryGetValue(type, out nameToField))
             {
 
-                nameToField = CreateMemberNameDictionary(type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy));
+                nameToField = CreateMemberNameDictionary(type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy));
                 fieldInfoCache.Add(type, nameToField);
             }
             if (!propertyInfoCache.TryGetValue(type, out nameToProperty))
             {
-                nameToProperty = CreateMemberNameDictionary(type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy));
+                nameToProperty = CreateMemberNameDictionary(type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy));
                 propertyInfoCache.Add(type, nameToProperty);
             }
 
@@ -404,6 +404,15 @@ namespace LinqToSolr.Extensions
             }
 
             return instance;
+        }
+
+        static string UnwrapJsonstring(string json)
+        {
+            if (json.StartsWith("\"") && json.EndsWith("\"") && json.Length > 1)
+            {
+                json = json.Substring(1, json.Length - 2);
+            }
+            return json;
         }
     }
 }
