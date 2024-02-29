@@ -7,25 +7,22 @@ namespace LinqToSolr
     {
         int Take { get; set; }
         int Skip { get; set; }
-        int FacetLimit { get; set; }
-        void SetDefaults();
     }
     public class LinqToSolrConfigurationDefaults : ILinqToSolrConfigurationDefaults
     {
-        public int Take { get; set; }
-        public int Skip { get; set; }
-        public int FacetLimit { get; set; }
+        public int Take { get; set; } = 500;
+        public int Skip { get; set; } = 0;
 
         public LinqToSolrConfigurationDefaults()
         {
-            SetDefaults();
         }
-
-        public void SetDefaults()
+        public LinqToSolrConfigurationDefaults(ILinqToSolrConfigurationDefaults defaults)
         {
-            Take = 500;
-            Skip = 0;
-            FacetLimit = 500;
+            if (defaults != null)
+            {
+                Take = defaults.Take;
+                Skip = defaults.Skip;
+            }
         }
     }
     public class LinqToSolrConfiguration : ILinqToSolrConfiguration
@@ -39,7 +36,6 @@ namespace LinqToSolr
         {
             Defaults.Take = defaultTake;
             Defaults.Skip = defaultSkip;
-            Defaults.FacetLimit = defaultFacetLimit;
         }
 
         public LinqToSolrConfiguration(ILinqToSolrEndpoint endpoint)
@@ -50,15 +46,7 @@ namespace LinqToSolr
         {
             Endpoint = endpoint;
             CoreMappings = new Dictionary<Type, string>();
-            if (defauls == null)
-            {
-                Defaults = new LinqToSolrConfigurationDefaults();
-                Defaults.SetDefaults();
-            }
-            else
-            {
-                Defaults = defauls;
-            }
+            Defaults = defauls;
         }
 
         public ILinqToSolrConfiguration MapCoreFor(Type type, string coreName)
