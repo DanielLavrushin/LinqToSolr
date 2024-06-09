@@ -278,11 +278,25 @@ namespace LinqToSolr.Expressions
             }
             else
             {
-                q.Append(ExtractFieldName(node.Member));
+                if (IsNullableType(node.Expression.Type) && node.Member.Name == "Value")
+                {
+                    var memberName = node.Expression.ToString().Split('.').Last();
+                    q.Append(memberName);
+                    return node;
+                }
+                else
+                {
+                    q.Append(ExtractFieldName(node.Member));
+                }
             }
 
             return base.VisitMember(node);
         }
+        private bool IsNullableType(Type type)
+        {
+            return type.IsGenericType() && type.GetGenericTypeDefinition().Equals(typeof(Nullable<>));
+        }
+
         protected override Expression VisitUnary(UnaryExpression node)
         {
             switch (node.NodeType)
@@ -299,6 +313,8 @@ namespace LinqToSolr.Expressions
             }
             return node;
         }
+
+
 
         private void HandleNotEqual(BinaryExpression node)
         {
