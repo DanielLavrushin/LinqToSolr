@@ -82,7 +82,7 @@ namespace LinqToSolr.Providers
         }
         public ILinqToSolrRequest PrepareRequest<TResult>(Expression expression)
         {
-            var translator = new ExpressionTranslator<TResult>(expression);
+            var translator = new ExpressionTranslator<TResult>(this, expression);
             var query = translator.Translate(expression);
             return new LinqToSolrRequest(this, query);
         }
@@ -177,7 +177,7 @@ namespace LinqToSolr.Providers
 
         public async Task<ILinqToSolrFinalResponse<TSource>> DeleteAsync<TSource>(IQueryable<TSource> expression)
         {
-            var translator = new ExpressionTranslator<TSource>(expression.Expression);
+            var translator = new ExpressionTranslator<TSource>(this, expression.Expression);
             var query = translator.Translate(expression.Expression);
             Request = LinqToSolrRequest.InitDelete<TSource>(this, query);
             return await SendAsync(Request, typeof(TSource)) as ILinqToSolrFinalResponse<TSource>;

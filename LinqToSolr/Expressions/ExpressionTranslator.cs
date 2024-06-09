@@ -1,5 +1,6 @@
 ﻿using LinqToSolr.Attributes;
 using LinqToSolr.Extensions;
+using LinqToSolr.Providers;
 using System;
 using System.Collections;
 using System.ComponentModel;
@@ -16,17 +17,19 @@ namespace LinqToSolr.Expressions
 
     internal class ExpressionTranslator<TObject> : ExpressionVisitor
     {
+        ILinqToSolrProvider _provider;
         Expression _expression { get; }
         StringBuilder q { get; set; }
         ITranslatedQuery _queryResult;
-        internal ExpressionTranslator(Expression expression)
+        internal ExpressionTranslator(ILinqToSolrProvider provider, Expression expression)
         {
+            _provider = provider;
             _expression = expression;
 
         }
         public ITranslatedQuery Translate(Expression expression)
         {
-            return Translate(expression, new TranslatedQuery());
+            return Translate(expression, new TranslatedQuery(_provider.Service.Configuration.Defaults));
         }
 
         public ITranslatedQuery Translate(Expression expression, ITranslatedQuery queryResult)
@@ -47,7 +50,7 @@ namespace LinqToSolr.Expressions
             {
                 var lambda = (LambdaExpression)StripQuotes(node.Arguments[1]);
 
-                var solrQueryTranslator = new ExpressionTranslator<TObject>(lambda);
+                var solrQueryTranslator = new ExpressionTranslator<TObject>(_provider, lambda);
                 var fq = solrQueryTranslator.Translate(lambda, _queryResult);
                 Visit(node.Arguments[0]);
                 return node;
