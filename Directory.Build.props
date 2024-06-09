@@ -2,7 +2,7 @@
     <PropertyGroup>
         <MajorVersion>3</MajorVersion>
         <MinorVersion>1</MinorVersion>
-        <RevisionVersion>1</RevisionVersion>
+        <RevisionVersion>2</RevisionVersion>
         <Version>$(MajorVersion).$(MinorVersion).$(RevisionVersion)</Version>
         <AssemblyVersion>$(Version)</AssemblyVersion>
         <FileVersion>$(Version)</FileVersion>
